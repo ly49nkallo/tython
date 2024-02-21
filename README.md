@@ -1,8 +1,18 @@
 # TYTHON Compiler/interpreter
 
-Compiled language. Simple. Fast. Democratic.
+## Description
 
-Rules:
+Ironically, the exact oppisite of Python in every possible way, but the compiler is in Python anyways.
+
+Compiled and interpreted language. Simple. Fast. Democratic.
+
+Based on the TI-BASIC 83/84 programming language developed by Texas Instruments, but modified for general computing.
+
+Language is statically and implicitly typed, state-based, non-functional, and not object oriented.
+
+Tython has a minimal feature set designed to have zero bloat and place the programmer completely in control of the language.
+
+## Rules
 
 1. The ZEN of Tython : LESS FEATURES >> READABILITY & LINE COUNT!
 2. Variables are one letter and, optionally, one number. (e.g. X, A0, Y1)

@@ -28,17 +28,26 @@ class TOKEN_TYPE(enum.Enum):
         R_PAREN = enum.auto()
 
 class Token(object):
-    def __init__(self, type, value):
+    def __init__(self, type:TOKEN_TYPE, value):
+        assert isinstance(type, TOKEN_TYPE)
         self.type:TOKEN_TYPE = type
-        self.value:typing.Union[str, int, float] = value
+        self.value = value
+
     def __repr__(self):
-        ret = ''
-        ret += str(self.type)
-        if self.value:
-            ret += str(self.value)
+        ret = str(self.type)
+        if self.value: ret += str(self.value)
         return ret
 
+class Lexer(object):
+    def __init__(self, text):
+        self.text = text
+        self.pos = -1
+        self.current_char = None
+        pass
 
+    def advance(self):
+        self.pos += 1
+     
 def main() -> None:
     logger:logging.Logger = logging.getLogger()
     parser = argparse.ArgumentParser(description='TYTHON Compiler')

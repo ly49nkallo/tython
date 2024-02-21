@@ -15,3 +15,5 @@ Provides a performant compiler backend that converts IL to ASM. Good fallback fo
 [Code Pulse's DIY Coding Languge](https://www.youtube.com/watch?v=Eythq9848Fg)
 
 Tutorial series detailing making a custom lanauge with Python3.
+
+[Pixeled Let's Create a Compiler Series](https://www.youtube.com/watch?v=vcSijrRsrY0&list=PLUDlas_Zy_qC7c5tCgTMYq2idyyT241qs)
