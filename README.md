@@ -31,10 +31,10 @@ Rules:
 Ex.
 
 ``` tython1
-; Comment
+# Comment
 program "squareroot" #name of program. Must match the filename.
 
-; x = (-b +- sqrt(b**2 - 4*a*c)) / 2a
+# x = (-b +- sqrt(b**2 - 4*a*c)) / 2a
 prompt a #Prompt a
 prompt b #Prompt b
 prompt c #Prompt c
@@ -48,8 +48,8 @@ disp "x2=", o2 #Display o3 in terminal
 ```
 
 ``` tython1
-; A simple bank system
-; @RESERVED i, B
+# A simple bank system
+# @RESERVED i, B
 program "bank"
 version 1 2 3
 
@@ -88,7 +88,7 @@ goto M
 ```
 
 ```tython1
-; program to compute fibonacii sequence
+# program to compute fibonacii sequence
 program "fibonacii_sequence"
 
 INT32 @I

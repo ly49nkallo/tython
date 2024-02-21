@@ -1,0 +1,12 @@
+program "fibonacii_sequence"
+
+INT32 @I
+dim(I) = 20
+@I[0] = 1
+@I[1] = 1
+i = 2
+lbl A
+@I[i] = @I[i-1] + @I[i-2]
+i = i + 1
+if i < 20 then
+goto A
