@@ -8,6 +8,7 @@ import time
 import argparse
 import enum
 import typing
+import regex as re
 
 from pprint import pprint
 
@@ -16,18 +17,50 @@ VERSION:str = "0.1.0"
 
 COMMENT_DELIM = '#'
 
+@enum.unique
 class TOKEN_TYPE(enum.Enum):
-        INT32 = enum.auto()
-        INT64 = enum.auto()
-        REAL32 = enum.auto()
-        REAL64 = enum.auto()
-        CHAR8 = enum.auto()
-        PLUS = enum.auto()
-        MINUS = enum.auto()
-        MUL = enum.auto()
-        DIV = enum.auto()
-        L_PAREN = enum.auto()
-        R_PAREN = enum.auto()
+        # DATA TYPES
+        INT32 = 'INT32'
+        INT64 = 'INT64'
+        REAL32 = 'REAL32'
+        REAL64 = 'REAL64'
+        CHAR8 = 'CHAR8'
+        # MATHEMATICAL OPERATORS
+        ASSIGN = '='
+        PLUS = '+'
+        MINUS = '-'
+        MUL = '*'
+        DIV = '/'
+        L_PAREN = '('
+        R_PAREN = ')'
+        # CONDITIONALS
+        IF = 'IF'
+        THEN = 'THEN'
+        ELSE = 'ELSE'
+        END = 'END'
+        # FLOW CONTROL
+        LABEL = 'LBL'
+        GOTO = 'GOTO'
+        # COMPARISON OPERATORS
+        GREATER_THAN = '>'
+        LESS_THAN = '<'
+        GE_THAN = '>='
+        LE_THAN = '<='
+        EQUAL_TO = '=='
+        # PROGRAM CONTROL
+        PROGRAM = 'PROGRAM'
+        IMPLICIT = 'IMPLICIT'
+        CALL = 'CALL'
+        # VARIABLE LITERALS
+        STR_LIT = enum.auto()
+        INT_LIT = enum.auto()
+        FLOAT_LIT = enum.auto()
+        HEX_LIT = enum.auto()
+        BIN_LIT = enum.auto()
+        # STRUCTURE TOKENS
+        EXPR = enum.auto()
+        LINE_BREAK = enum.auto()
+
 
 class Token(object):
     '''A lexical unit of code correspinding to a certain, specific function.'''
@@ -48,7 +81,7 @@ class Lexer(object):
     def __call__(cls, text:str) -> list:
         lines = text.split('\n')
         # remove blank lines
-        lines = list(filter(lambda x: x != '', lines))
+        lines = [l.strip() for l in lines if l != '']
         buffers = []
         for line in lines:
             buffer = ''
@@ -59,21 +92,26 @@ class Lexer(object):
                 next_char = line[i+1] if i+1<len(line) else None
                 prev_char = line[i-1] if i-1>=0 else None
                 buffer += curr_char
-                if curr_char == COMMENT_DELIM:
-                    pass
-                elif curr_char == ' ':
-                    buffer = ''
-                elif next_char == COMMENT_DELIM:
-                    buffers.append(buffer)
-                    buffer = ''
+                if curr_char == COMMENT_DELIM and not in_str_lit:
+                    if buffer[:-1] != '':
+                        buffers.append(buffer[:-1]) 
                     break
-                elif next_char == ' ' and not in_str_lit:
-                    buffers.append(buffer)
+                elif curr_char == ' ' and not in_str_lit:
+                    if buffer[:-1] != '':
+                        buffers.append(buffer[:-1])
                     buffer = ''
-                elif next_char == '\"':
-                    buffers.append(buffer)
-                    buffer = ''
+                elif curr_char == '\"':
+                    if not in_str_lit:
+                        if buffer[:-1] != '':
+                            buffers.append(buffer[:-1])
+                        buffer = '\"'
+                    else:
+                        buffers.append(buffer)
+                        buffer = ''
                     in_str_lit = not in_str_lit
+                    print(f"set {in_str_lit=}")
+                elif i == len(line) - 1:
+                    buffers.append(buffer)
                 i += 1
         # buffers = list(filter(lambda x: x != '' and x != ' ', buffers))
         pprint(buffers)

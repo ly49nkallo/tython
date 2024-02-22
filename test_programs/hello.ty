@@ -2,3 +2,6 @@ PROGRAM "hello world"
 
 CHAR8 @M0 = "Hello, World!"
 DISPSTR @M0 # This works because it is a string, and strings have support for display
+i = 0
+i = i + 1
+DISP i
