@@ -26,13 +26,13 @@ class TOKEN_TYPE(enum.Enum):
         REAL64 = 'REAL64'
         CHAR8 = 'CHAR8'
         # MATHEMATICAL OPERATORS
-        ASSIGN = '='
-        PLUS = '+'
-        MINUS = '-'
-        MUL = '*'
-        DIV = '/'
-        L_PAREN = '('
-        R_PAREN = ')'
+        ASSIGN = '\='
+        PLUS = '\+'
+        MINUS = '\-'
+        MUL = '\*'
+        DIV = '\/'
+        L_PAREN = '\('
+        R_PAREN = '\)'
         # CONDITIONALS
         IF = 'IF'
         THEN = 'THEN'
@@ -42,8 +42,8 @@ class TOKEN_TYPE(enum.Enum):
         LABEL = 'LBL'
         GOTO = 'GOTO'
         # COMPARISON OPERATORS
-        GREATER_THAN = '>'
-        LESS_THAN = '<'
+        GREATER_THAN = '\>'
+        LESS_THAN = '\<'
         GE_THAN = '>='
         LE_THAN = '<='
         EQUAL_TO = '=='
@@ -52,11 +52,17 @@ class TOKEN_TYPE(enum.Enum):
         IMPLICIT = 'IMPLICIT'
         CALL = 'CALL'
         # VARIABLE LITERALS
-        STR_LIT = enum.auto()
-        INT_LIT = enum.auto()
-        FLOAT_LIT = enum.auto()
-        HEX_LIT = enum.auto()
-        BIN_LIT = enum.auto()
+        STR_LIT = '\\".*\\"'
+        INT_LIT = '\\d+'
+        FLOAT_LIT = '\\d+\.\\d*'
+        HEX_LIT = '0x[A-F0-9]+'
+        BIN_LIT = '0b[01]+'
+        # VARIABLES
+        VAR = '[A-Z]\\d?'
+        ARRAY_VAR = '@[A-Z]\\d?'
+        # COMMANDS
+        DISP = 'DISP'
+        DISP_STR = 'DISPSTR'
         # STRUCTURE TOKENS
         EXPR = enum.auto()
         LINE_BREAK = enum.auto()
@@ -64,12 +70,12 @@ class TOKEN_TYPE(enum.Enum):
 
 class Token(object):
     '''A lexical unit of code correspinding to a certain, specific function.'''
-    def __init__(self, type:TOKEN_TYPE, value):
+    def __init__(self, type:TOKEN_TYPE, value) -> None:
         assert isinstance(type, TOKEN_TYPE)
         self.type:TOKEN_TYPE = type
         self.value = value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         ret = str(self.type)
         if self.value: ret += f":{self.value}"
         return ret
@@ -79,6 +85,12 @@ class Lexer(object):
 
     @classmethod
     def __call__(cls, text:str) -> list:
+        # buffers = list(filter(lambda x: x != '' and x != ' ', buffers))
+        cls.lexical_analysis(text)
+        pass
+
+    @classmethod
+    def lexical_analysis(cls, text:str)->list:
         lines = text.split('\n')
         # remove blank lines
         lines = [l.strip() for l in lines if l != '']
@@ -113,9 +125,21 @@ class Lexer(object):
                 elif i == len(line) - 1:
                     buffers.append(buffer)
                 i += 1
-        # buffers = list(filter(lambda x: x != '' and x != ' ', buffers))
-        pprint(buffers)
-        pass
+        pprint(buffers) 
+        tokens = []
+        for buffer in buffers:
+            matched_pattern:typing.Optional[TOKEN_TYPE] = None
+            for tt in TOKEN_TYPE:
+                pattern = tt.value
+                if pattern in list(range(10)): continue #ignore regular token types w/o pattern
+                if re.fullmatch(pattern, buffer.upper()):
+                    matched_pattern = pattern
+                    break
+            if matched_pattern is None:
+                raise RuntimeError(f"Unable to match token {buffer}")
+            tokens.append(Token(tt, buffer))
+
+        pprint(tokens)
 
     @classmethod
     def tokenize_buffer(cls, buffer:str):
