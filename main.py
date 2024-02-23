@@ -65,7 +65,7 @@ class TOKEN_TYPE(enum.Enum):
         DISP_STR = 'DISPSTR'
         # STRUCTURE TOKENS
         EXPR = enum.auto()
-        LINE_BREAK = enum.auto()
+        text_BREAK = enum.auto()
 
 
 class Token(object):
@@ -91,20 +91,20 @@ class Lexer(object):
 
     @classmethod
     def lexical_analysis(cls, text:str)->list:
-        lines = text.split('\n')
-        # remove blank lines
-        lines = [l.strip() for l in lines if l != '']
         buffers = []
-        for line in lines:
-            buffer = ''
-            i = 0
-            in_str_lit:bool = False
-            while i < len(line):
-                curr_char = line[i]
-                next_char = line[i+1] if i+1<len(line) else None
-                prev_char = line[i-1] if i-1>=0 else None
-                buffer += curr_char
+        buffer = ''
+        i = 0
+        in_str_lit:bool = False
+        in_comment:bool = False
+        while i < len(text):
+            curr_char = text[i]
+            next_char = text[i+1] if i+1<len(text) else None
+            prev_char = text[i-1] if i-1>=0 else None
+            buffer += curr_char
+            if not in_comment:
                 if curr_char == COMMENT_DELIM and not in_str_lit:
+                    in_comment = True
+                    print(f"set {in_comment=}")
                     if buffer[:-1] != '':
                         buffers.append(buffer[:-1]) 
                     break
@@ -122,9 +122,16 @@ class Lexer(object):
                         buffer = ''
                     in_str_lit = not in_str_lit
                     print(f"set {in_str_lit=}")
-                elif i == len(line) - 1:
-                    buffers.append(buffer)
-                i += 1
+            if curr_char == '\n':
+                if buffer[:-1] != '':
+                    buffers.append(buffer[:-1])
+                buffer = ''
+                in_str_lit = False
+                in_comment = False
+                print(f"set {in_comment=}")
+            elif i == len(text) - 1:
+                buffers.append(buffer)
+            i += 1
         pprint(buffers) 
         tokens = []
         for buffer in buffers:
