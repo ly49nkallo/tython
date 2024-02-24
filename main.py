@@ -63,9 +63,20 @@ class TOKEN_TYPE(enum.Enum):
         # COMMANDS
         DISP = 'DISP'
         DISP_STR = 'DISPSTR'
+        # TRIG FUNCTIONS
+        SIN = 'SIN'
+        COS = 'COS'
+        TAN = 'TAN'
+        COT = 'COT'
+        SEC = 'SEC'
+        CSC = 'CSC'
+        # ARRAY FUNCTIONS
+        DIM = 'DIM'
         # STRUCTURE TOKENS
+        COMMA = '\,'
         EXPR = enum.auto()
-        text_BREAK = enum.auto()
+        LINE_BREAK = enum.auto()
+        FUNCTION = enum.auto()
 
 
 class Token(object):
@@ -107,10 +118,25 @@ class Lexer(object):
                     print(f"set {in_comment=}")
                     if buffer[:-1] != '':
                         buffers.append(buffer[:-1]) 
-                    break
+                    
                 elif curr_char == ' ' and not in_str_lit:
                     if buffer[:-1] != '':
                         buffers.append(buffer[:-1])
+                    buffer = ''
+                elif curr_char == '(':
+                    if buffer[:-1] != '' and not in_str_lit:
+                        buffers.append(buffer[:-1])
+                    buffers.append('(')
+                    buffer = ''
+                elif curr_char == ')':
+                    if buffer[:-1] != '' and not in_str_lit:
+                        buffers.append(buffer[:-1])
+                    buffers.append(')')
+                    buffer = ''
+                elif curr_char == ',':
+                    if buffer[:-1] != '' and not in_str_lit:
+                        buffers.append(buffer[:-1])
+                    buffers.append(',')
                     buffer = ''
                 elif curr_char == '\"':
                     if not in_str_lit:
@@ -123,7 +149,7 @@ class Lexer(object):
                     in_str_lit = not in_str_lit
                     print(f"set {in_str_lit=}")
             if curr_char == '\n':
-                if buffer[:-1] != '':
+                if buffer[:-1] != '' and not in_comment:
                     buffers.append(buffer[:-1])
                 buffer = ''
                 in_str_lit = False

@@ -1,0 +1,8 @@
+i = 1 #
+INT32 i
+###
+# hello ! #   
+f()  
+f(x)   
+f(x, y)  
+f(x   
