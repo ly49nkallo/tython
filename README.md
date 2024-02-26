@@ -25,7 +25,7 @@ Tython has a minimal feature set designed to have zero bloat and place the progr
    2. Variables I, J, K, L, M, N, are INTEGERS. Otherwise, it is REAL.
    3. If these do not work for you, you can specify the type EXPLICITLY or use the implicit keyword to remap the implicit types for the program
    4. There is no boolean type, just integers!
-   5. Any variable prefixed with an _ is automatically an vector
+   5. Any variable prefixed with an @ is automatically an vector
    6. An array is homogeneous in type
    7. Strings are represented as arrays or characters
    8. Lists are indexed with _square brackets_ (unlike TI-83/4)

@@ -13,7 +13,6 @@ import regex as re
 from pprint import pprint
 
 LOGFILE:pathlib.Path = pathlib.Path("./log.log")
-VERSION:str = "0.1.0"
 
 COMMENT_DELIM = '#'
 
@@ -77,6 +76,7 @@ class TOKEN_TYPE(enum.Enum):
         EXPR = enum.auto()
         LINE_BREAK = enum.auto()
         FUNCTION = enum.auto()
+        EOF = enum.auto()
 
 
 class Token(object):
@@ -91,17 +91,13 @@ class Token(object):
         if self.value: ret += f":{self.value}"
         return ret
 
-class Lexer(object):
+class Parse(object):
     '''Responsible for taking raw text input and generating a list of tokens.'''
 
     @classmethod
-    def __call__(cls, text:str) -> list:
+    def lexical_analysis(cls, text:str) -> list:
         # buffers = list(filter(lambda x: x != '' and x != ' ', buffers))
-        cls.lexical_analysis(text)
-        pass
-
-    @classmethod
-    def lexical_analysis(cls, text:str)->list:
+        if DEBUG: print(text)
         buffers = []
         buffer = ''
         i = 0
@@ -115,7 +111,6 @@ class Lexer(object):
             if not in_comment:
                 if curr_char == COMMENT_DELIM and not in_str_lit:
                     in_comment = True
-                    print(f"set {in_comment=}")
                     if buffer[:-1] != '':
                         buffers.append(buffer[:-1]) 
                     
@@ -133,7 +128,7 @@ class Lexer(object):
                         buffers.append(buffer[:-1])
                     buffers.append(')')
                     buffer = ''
-                elif curr_char == ',':
+                elif curr_char == ',' and not in_str_lit:
                     if buffer[:-1] != '' and not in_str_lit:
                         buffers.append(buffer[:-1])
                     buffers.append(',')
@@ -147,18 +142,17 @@ class Lexer(object):
                         buffers.append(buffer)
                         buffer = ''
                     in_str_lit = not in_str_lit
-                    print(f"set {in_str_lit=}")
             if curr_char == '\n':
                 if buffer[:-1] != '' and not in_comment:
                     buffers.append(buffer[:-1])
                 buffer = ''
                 in_str_lit = False
                 in_comment = False
-                print(f"set {in_comment=}")
             elif i == len(text) - 1:
-                buffers.append(buffer)
+                if buffer != '':
+                    buffers.append(buffer)
             i += 1
-        pprint(buffers) 
+        if DEBUG: pprint(buffers)
         tokens = []
         for buffer in buffers:
             matched_pattern:typing.Optional[TOKEN_TYPE] = None
@@ -171,32 +165,50 @@ class Lexer(object):
             if matched_pattern is None:
                 raise RuntimeError(f"Unable to match token {buffer}")
             tokens.append(Token(tt, buffer))
-
-        pprint(tokens)
+        if DEBUG: pprint(tokens)
 
     @classmethod
-    def tokenize_buffer(cls, buffer:str):
+    def syntax_analysis(cls, tokens:list):
         pass
-
+    
+VERSION:tuple = (0, 1, 0)
 def main() -> None:
     logger:logging.Logger = logging.getLogger()
-    if len(sys.argv) == 1: #bypass 
-        filepath = pathlib.Path("./test_programs/hello.ty")
-    else:
-        parser = argparse.ArgumentParser(description=f'TYTHON Compiler {VERSION}')
-        parser.add_argument('input_file')
-        parser.add_argument('-o', '--output')
-        parser.add_argument('-c', '--compile', action='store_true')
-        parser.add_argument('-i', '--interpret', action='store_true')
-        parser.add_argument('-v', '--version', action='version', version=f'Tython {VERSION}')
-        args = parser.parse_args()
-        filepath:pathlib.Path = pathlib.Path(args.input_file)
+    
+    # Argument Parser
+    parser = argparse.ArgumentParser(description=f'TYTHON Compiler {VERSION}')
+    parser.add_argument('input_file')
+    parser.add_argument('-o', '--output')
+    parser.add_argument('-c', '--compile', action='store_true', default=False)
+    parser.add_argument('-i', '--interpret', action='store_true', default=False)
+    parser.add_argument('--debug', action='store_true', default=False)
+    parser.add_argument('-v', '--version', action='version', 
+                        version=f'Tython {VERSION[0]}.{VERSION[1]}.{VERSION[2]}')
+    args = parser.parse_args()
+    filepath:pathlib.Path = pathlib.Path(args.input_file)
 
+    # Configure Debug setting
+    global DEBUG
+    DEBUG = args.debug
+    if DEBUG: print(f'{args.debug=}')
+
+    # Configure compilation setting
+    global COMPILE
+    if args.compile and args.interpret: 
+        raise SyntaxError("Cannot compile and interpret simultaneously")
+    if not (args.compile or args.interpret):
+        COMPILE = True
+    if args.compile:
+        COMPILE = True
+    if args.interpret:
+        COMPILE = False
+
+    # Retrive file contents
     with open(filepath, 'r') as f:
         file_contents = f.read()
 
-    lexer = Lexer()
-    tokens = lexer(file_contents)
+    # Initialize lexer
+    tokens = Parse.lexical_analysis(file_contents)
 
     pass
 
