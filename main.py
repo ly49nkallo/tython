@@ -16,7 +16,6 @@ from pprint import pprint
 LOGFILE:pathlib.Path = pathlib.Path("./log.log")
 COMMENT_DELIM = '#'
 
-@enum.unique
 class TOKEN_TYPE(enum.Enum):
         # DATA TYPES
         INT32 = 'INT32'
@@ -73,9 +72,9 @@ class TOKEN_TYPE(enum.Enum):
         DIM = 'DIM'
         # STRUCTURE TOKENS
         COMMA = '\,'
-        LINE_BREAK = '\n'
-        EXPR = enum.auto()
-        EOF = enum.auto()
+        LINE_BREAK = 1
+        EXPR = 2
+        EOF = 3
 
 REQUIRES_VALUE:set = {
         TOKEN_TYPE.STR_LIT, 
@@ -108,6 +107,7 @@ class Parser(object):
         # buffers = list(filter(lambda x: x != '' and x != ' ', buffers))
         if DEBUG: print(text)
         buffers = []
+        tokens = []
         buffer = ''
         i = 0
         in_str_lit:bool = False
@@ -121,67 +121,70 @@ class Parser(object):
                 if curr_char == COMMENT_DELIM and not in_str_lit:
                     in_comment = True
                     if buffer[:-1] != '':
-                        buffers.append(buffer[:-1]) 
+                        tokens.append(cls.analyze_buffer(buffer[:-1]))
                     
                 elif curr_char == ' ' and not in_str_lit:
                     if buffer[:-1] != '':
-                        buffers.append(buffer[:-1])
+                        tokens.append(cls.analyze_buffer(buffer[:-1]))
                     buffer = ''
                 elif curr_char == '(':
                     if buffer[:-1] != '' and not in_str_lit:
-                        buffers.append(buffer[:-1])
-                    buffers.append('(')
+                        tokens.append(cls.analyze_buffer(buffer[:-1]))
+                    tokens.append(cls.analyze_buffer('('))
                     buffer = ''
                 elif curr_char == ')':
                     if buffer[:-1] != '' and not in_str_lit:
-                        buffers.append(buffer[:-1])
-                    buffers.append(')')
+                        tokens.append(cls.analyze_buffer(buffer[:-1]))
+                    tokens.append(cls.analyze_buffer(')'))
                     buffer = ''
                 elif curr_char == ',' and not in_str_lit:
                     if buffer[:-1] != '' and not in_str_lit:
-                        buffers.append(buffer[:-1])
-                    buffers.append(',')
+                        tokens.append(cls.analyze_buffer(buffer[:-1]))
+                    tokens.append(Token(TOKEN_TYPE.COMMA))
                     buffer = ''
                 elif curr_char == '\"':
                     if not in_str_lit:
                         if buffer[:-1] != '':
-                            buffers.append(buffer[:-1])
+                            tokens.append(cls.analyze_buffer(buffer[:-1]))
                         buffer = '\"'
                     else:
-                        buffers.append(buffer)
+                        tokens.append(cls.analyze_buffer(buffer))
                         buffer = ''
                     in_str_lit = not in_str_lit
             if curr_char == '\n':
                 print('new line')
                 if buffer[:-1] != '' and not in_comment:
-                    buffers.append(buffer[:-1])
-                buffers.append('\n')
+                    tokens.append(cls.analyze_buffer(buffer[:-1]))
+                tokens.append(Token(TOKEN_TYPE.LINE_BREAK))
                 buffer = ''
                 in_str_lit = False
                 in_comment = False
             elif i == len(text) - 1:
                 if buffer != '':
-                    buffers.append(buffer)
+                    tokens.append(cls.analyze_buffer(buffer))
             i += 1
         if DEBUG: pprint(buffers)
-        tokens = []
         for buffer in buffers:
-            matched_pattern:typing.Optional[TOKEN_TYPE] = None
-            for tt in TOKEN_TYPE:
-                pattern = tt.value
-                if pattern in list(range(10)): continue #ignore regular token types w/o pattern
-                if re.fullmatch(pattern, buffer.upper()):
-                    matched_pattern = pattern
-                    break
-            if matched_pattern is None:
-                raise RuntimeError(f"Unable to match token <{buffer}>")
-            if tt in REQUIRES_VALUE:
-                token = Token(tt, value=buffer)
-            else:
-                token = Token(tt)
-            tokens.append(token)
+            cls.analyze_buffer(buffer, tokens)
         tokens.append(Token(TOKEN_TYPE.EOF))
         if DEBUG: pprint(tokens)
+
+    @classmethod
+    def analyze_buffer(cls, buffer:str) -> Token:
+        matched_token:typing.Optional[TOKEN_TYPE] = None
+        for tt in TOKEN_TYPE:
+            pattern = tt.value
+            if isinstance(pattern, int): continue #ignore regular token types w/o pattern
+            if re.fullmatch(pattern, buffer.upper()):
+                matched_token = tt
+                break
+        if matched_token is None:
+            raise RuntimeError(f"Unable to match token <{buffer}>")
+        if tt in REQUIRES_VALUE:
+            token = Token(matched_token, value=buffer)
+        else:
+            token = Token(matched_token)
+        return token
 
     @classmethod
     def syntax_analysis(cls, tokens:list):
@@ -192,6 +195,9 @@ class Parser(object):
 
             def is_leaf(self) -> bool:
                 return (len(self.children) == 0)
+
+            def __repr__(self):
+                return f"Node({repr(self.token)})"
         
     
 VERSION:tuple = (0, 1, 0)
