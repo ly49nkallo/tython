@@ -1,5 +1,7 @@
 # Log files
 *.log
+# Custom run file
+run.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

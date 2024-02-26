@@ -1,5 +1,6 @@
-'''Author: Ty Brennan'''
 '''Tython compiler'''
+'''Author: Ty Brennan'''
+
 import os, sys
 import pathlib
 import functools
@@ -13,7 +14,6 @@ import regex as re
 from pprint import pprint
 
 LOGFILE:pathlib.Path = pathlib.Path("./log.log")
-
 COMMENT_DELIM = '#'
 
 @enum.unique
@@ -73,15 +73,23 @@ class TOKEN_TYPE(enum.Enum):
         DIM = 'DIM'
         # STRUCTURE TOKENS
         COMMA = '\,'
+        LINE_BREAK = '\n'
         EXPR = enum.auto()
-        LINE_BREAK = enum.auto()
-        FUNCTION = enum.auto()
         EOF = enum.auto()
 
+REQUIRES_VALUE:set = {
+        TOKEN_TYPE.STR_LIT, 
+        TOKEN_TYPE.INT_LIT, 
+        TOKEN_TYPE.FLOAT_LIT, 
+        TOKEN_TYPE.HEX_LIT, 
+        TOKEN_TYPE.BIN_LIT,
+        TOKEN_TYPE.VAR,
+        TOKEN_TYPE.ARRAY_VAR,
+    }
 
 class Token(object):
     '''A lexical unit of code correspinding to a certain, specific function.'''
-    def __init__(self, type:TOKEN_TYPE, value) -> None:
+    def __init__(self, type:TOKEN_TYPE, value:typing.Optional=None) -> None:
         assert isinstance(type, TOKEN_TYPE)
         self.type:TOKEN_TYPE = type
         self.value = value
@@ -91,7 +99,8 @@ class Token(object):
         if self.value: ret += f":{self.value}"
         return ret
 
-class Parse(object):
+
+class Parser(object):
     '''Responsible for taking raw text input and generating a list of tokens.'''
 
     @classmethod
@@ -143,8 +152,10 @@ class Parse(object):
                         buffer = ''
                     in_str_lit = not in_str_lit
             if curr_char == '\n':
+                print('new line')
                 if buffer[:-1] != '' and not in_comment:
                     buffers.append(buffer[:-1])
+                buffers.append('\n')
                 buffer = ''
                 in_str_lit = False
                 in_comment = False
@@ -163,13 +174,25 @@ class Parse(object):
                     matched_pattern = pattern
                     break
             if matched_pattern is None:
-                raise RuntimeError(f"Unable to match token {buffer}")
-            tokens.append(Token(tt, buffer))
+                raise RuntimeError(f"Unable to match token <{buffer}>")
+            if tt in REQUIRES_VALUE:
+                token = Token(tt, value=buffer)
+            else:
+                token = Token(tt)
+            tokens.append(token)
+        tokens.append(Token(TOKEN_TYPE.EOF))
         if DEBUG: pprint(tokens)
 
     @classmethod
     def syntax_analysis(cls, tokens:list):
-        pass
+        class Node:
+            def __init__(self, token:Token, children:list):
+                self.token:Token = token
+                self.children:list = children
+
+            def is_leaf(self) -> bool:
+                return (len(self.children) == 0)
+        
     
 VERSION:tuple = (0, 1, 0)
 def main() -> None:
@@ -181,6 +204,7 @@ def main() -> None:
     parser.add_argument('-o', '--output')
     parser.add_argument('-c', '--compile', action='store_true', default=False)
     parser.add_argument('-i', '--interpret', action='store_true', default=False)
+    
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('-v', '--version', action='version', 
                         version=f'Tython {VERSION[0]}.{VERSION[1]}.{VERSION[2]}')
@@ -208,8 +232,8 @@ def main() -> None:
         file_contents = f.read()
 
     # Initialize lexer
-    tokens = Parse.lexical_analysis(file_contents)
-
+    tokens = Parser.lexical_analysis(file_contents)
+    tree = Parser.syntax_analysis(tokens)
     pass
 
 if __name__ == '__main__':
