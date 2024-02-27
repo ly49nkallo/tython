@@ -88,7 +88,7 @@ REQUIRES_VALUE:set = {
 
 class Token(object):
     '''A lexical unit of code correspinding to a certain, specific function.'''
-    def __init__(self, type:TOKEN_TYPE, value:typing.Optional=None) -> None:
+    def __init__(self, type:TOKEN_TYPE, value=None):
         assert isinstance(type, TOKEN_TYPE)
         self.type:TOKEN_TYPE = type
         self.value = value
