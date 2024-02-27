@@ -50,6 +50,7 @@ class TOKEN_TYPE(enum.Enum):
         IMPLICIT = 'IMPLICIT'
         CALL = 'CALL'
         # VARIABLE LITERALS
+        CHAR_LIT = '.'
         STR_LIT = '\\".*\\"'
         INT_LIT = '\\d+'
         FLOAT_LIT = '\\d+\.\\d*'
@@ -73,10 +74,15 @@ class TOKEN_TYPE(enum.Enum):
         # STRUCTURE TOKENS
         COMMA = '\,'
         LINE_BREAK = 1
-        EXPR = 2
-        EOF = 3
+        EOF = 2
+        EXPR = 3
+        PROG = 4
+        BIN_EXPR = 5
+        STMT = 6
+
 
 REQUIRES_VALUE:set = {
+        TOKEN_TYPE.CHAR_LIT,
         TOKEN_TYPE.STR_LIT, 
         TOKEN_TYPE.INT_LIT, 
         TOKEN_TYPE.FLOAT_LIT, 
@@ -85,6 +91,7 @@ REQUIRES_VALUE:set = {
         TOKEN_TYPE.VAR,
         TOKEN_TYPE.ARRAY_VAR,
     }
+
 
 class Token(object):
     '''A lexical unit of code correspinding to a certain, specific function.'''
@@ -98,6 +105,20 @@ class Token(object):
         if self.value: ret += f":{self.value}"
         return ret
 
+class Node(object):
+    def __init__(self, token:Token, children:list, name:str=None):
+        self.name:typing.Optional[str] = name
+        self.token:Token = token
+        self.children:list = children
+
+    def is_leaf(self) -> bool:
+        return (len(self.children) == 0)
+
+    def __repr__(self):
+        if name: ret = name
+        else: ret = repr(self.token) + '\n'
+        for c in self.children:
+            msg += '    ' + repr(c) + '\n'
 
 class Parser(object):
     '''Responsible for taking raw text input and generating a list of tokens.'''
@@ -152,7 +173,6 @@ class Parser(object):
                         buffer = ''
                     in_str_lit = not in_str_lit
             if curr_char == '\n':
-                print('new line')
                 if buffer[:-1] != '' and not in_comment:
                     tokens.append(cls.analyze_buffer(buffer[:-1]))
                 tokens.append(Token(TOKEN_TYPE.LINE_BREAK))
@@ -168,6 +188,7 @@ class Parser(object):
             cls.analyze_buffer(buffer, tokens)
         tokens.append(Token(TOKEN_TYPE.EOF))
         if DEBUG: pprint(tokens)
+        return tokens
 
     @classmethod
     def analyze_buffer(cls, buffer:str) -> Token:
@@ -188,17 +209,33 @@ class Parser(object):
 
     @classmethod
     def syntax_analysis(cls, tokens:list):
-        class Node:
-            def __init__(self, token:Token, children:list):
-                self.token:Token = token
-                self.children:list = children
 
-            def is_leaf(self) -> bool:
-                return (len(self.children) == 0)
+        i = 0
+        if tokens[0] is not TOKEN_TYPE.PROGRAM or tokens[1] is not TOKEN_TYPE.STR_LIT:
+            raise SyntaxError(f"Program must begin with a program name, got {tokens[0]} and {tokens[1]} instead")
 
-            def __repr__(self):
-                return f"Node({repr(self.token)})"
-        
+        root_node = Node(TOKEN_TYPE.PROG, [])
+        expected:typing.Optional[TOKEN_TYPE] = None
+        while i < len(tokens):
+            curr = tokens[i]
+            next = tokens[i+1] if i+1<len(tokens) else None
+            if curr.type == TOKEN_TYPE.PROGRAM:
+                if i != 1: pass
+                if 
+            elif curr.type == 
+                
+            i += 1
+
+class Interpreter(object):
+    def __init__(self):
+        self.variables = dict()
+
+    def assign(self, var:str, value):
+        assert re.fullmatch('[A-Z]\\d?', var), f'Variable assign for invalid variable {var}'
+        self.variables.update({var: value})
+
+
+    pass
     
 VERSION:tuple = (0, 1, 0)
 def main() -> None:

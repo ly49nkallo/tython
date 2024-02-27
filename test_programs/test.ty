@@ -1,11 +1,14 @@
+program "test"
 i = 1 #
 INT32 i
-###
-# hello ! #   
-f()  
-f(x)   
-f(x, y)  
-f(x   
-Disp "Hello, World!"
-a = sin(1.0)
+REAL32 i
+"Hello you"
+# All equal to 69
+69
+69.
+0x45
+0b1000101
+Disp _
+
+
 x = (1. + 2.) * (3. + 4.) / 5.
