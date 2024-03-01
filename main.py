@@ -51,12 +51,13 @@ class TOKEN_TYPE(enum.Enum):
         IMPLICIT = 'IMPLICIT'
         CALL = 'CALL'
         # VARIABLE LITERALS
-        CHAR_LIT = '.'
+        CHAR_LIT = '\'.\''
         STR_LIT = '\\".*\\"'
         INT_LIT = '\\d+'
         FLOAT_LIT = '\\d+\.\\d*'
         HEX_LIT = '0x[A-F0-9]+'
         BIN_LIT = '0b[01]+'
+
         # VARIABLES
         VAR = '[A-Z]\\d?'
         ARRAY_VAR = '@[A-Z]\\d?'
@@ -121,12 +122,18 @@ class Node(object):
         assert isinstance(other, Node)
         self.children.append(other)
 
-    def __repr__(self):
+    def _repr_helper(self, tabs:int):
         if self.name is not None: ret = self.name
-        else: ret = repr(self.token) + '\n'
+        else: ret = repr(self.token)
+        if len(self.children) != 0: ret += '\n'
         for c in self.children:
-            ret += '    ' + repr(c) + '\n'
+            assert isinstance(c, Node), str(type(c))
+            ret += ' ' * (4*tabs) + c._repr_helper(tabs+1) + '\n'
+        if len(self.children) != 0: ret += ' ' * (4*tabs)
         return ret
+
+    def __repr__(self):
+        return self._repr_helper(1)
 
 class Parser(object):
     '''Parse code into AST'''
@@ -216,7 +223,6 @@ class Parser(object):
             token = Token(matched_token, line_number)
         return token
 
-
     @classmethod
     def syntax_analysis(cls, tokens:list):
         '''Take list of tokens and create a (potentially illegal) AST'''
@@ -239,26 +245,26 @@ class Parser(object):
                 if i != 0: raise SyntaxError("PROGRAM token must be first in program")
                 if next.type != TOKEN_TYPE.STR_LIT:
                     raise SyntaxError(f"Expected STR_LIT, got {next.type}")
-                root_node.append(Node(curr, [next]))
+                root_node.append(Node(curr, [Node(next, [])]))
                 i += 2 # digest next token
             elif curr.type == TOKEN_TYPE.VERSION:
-                if next.type != TOKEN_TYPE.STR_LIT: raise SyntaxError("Expected STR_LIT after PROGRAM") 
-                if not all([tokens[j].type == TOKEN_TYPE.INT_LIT for j in range(i, i+3)]):
-                    raise SyntaxError("Expected INT_LIT after VERSION token")
-                root_node.append(Node(curr), [tokens[j] for j in range(i, i+3)])
+                if not all([tokens[j].type == TOKEN_TYPE.INT_LIT for j in range(i+1, i+4)]):
+                    raise SyntaxError(f"Expected INT_LIT after VERSION token, got {[tokens[j].type for j in range(i+1, i+4)]}")
+                root_node.append(Node(curr, [Node(tokens[j], []) for j in range(i+1, i+4)]))
                 i += 4
             elif curr.type == TOKEN_TYPE.LABEL:
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError("Expected VAR after LABEL")
-                root_node.append(Node(curr, [next]))
+                root_node.append(Node(curr, [Node(next, [])]))
                 i += 2
             elif curr.type == TOKEN_TYPE.GOTO:
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError("Expected VAR after GOTO")
-                root_node.append(Node(curr, [next]))
+                root_node.append(Node(curr, [Node(next, [])]))
             elif curr.type == TOKEN_TYPE.IF: pass
                 # if tokens[i+1].type != @TODO
             else:
                 if DEBUG: print(f'failed to parse token {curr}.')
                 i += 1
+
         return root_node
 
 class Interpreter(object):

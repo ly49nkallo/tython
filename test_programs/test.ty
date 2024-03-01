@@ -1,4 +1,5 @@
 program "test"
+version 1 2 1
 i = 1 #
 INT32 i
 REAL32 i
@@ -8,7 +9,7 @@ REAL32 i
 69.
 #0x45
 #0b1000101
-Disp _
+Disp 69
 
 
 x = (1. + 2.) * (3. + 4.) / 5. # COMMENT
