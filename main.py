@@ -45,6 +45,7 @@ class TOKEN_TYPE(enum.Enum):
         GE_THAN = '>='
         LE_THAN = '<='
         EQUAL_TO = '=='
+        NOT_EQUAL_TO = '\!='
         # PROGRAM CONTROL
         PROGRAM = 'PROGRAM'
         VERSION = 'VERSION'
@@ -57,7 +58,6 @@ class TOKEN_TYPE(enum.Enum):
         FLOAT_LIT = '\\d+\.\\d*'
         HEX_LIT = '0x[A-F0-9]+'
         BIN_LIT = '0b[01]+'
-
         # VARIABLES
         VAR = '[A-Z]\\d?'
         ARRAY_VAR = '@[A-Z]\\d?'
@@ -239,6 +239,7 @@ class Parser(object):
 
         root_node = Node(TOKEN_TYPE.PROG, [])
         while i < len(tokens):
+            prev = tokens[i-1] if i-1>=0 else None
             curr = tokens[i]
             next = tokens[i+1] if i+1<len(tokens) else None
             if curr.type == TOKEN_TYPE.PROGRAM:
@@ -253,13 +254,15 @@ class Parser(object):
                 root_node.append(Node(curr, [Node(tokens[j], []) for j in range(i+1, i+4)]))
                 i += 4
             elif curr.type == TOKEN_TYPE.LABEL:
-                if next.type != TOKEN_TYPE.VAR: raise SyntaxError("Expected VAR after LABEL")
+                if next.type != TOKEN_TYPE.VAR: raise SyntaxError("Expected VAR after LABEL, got {next} instead")
                 root_node.append(Node(curr, [Node(next, [])]))
                 i += 2
             elif curr.type == TOKEN_TYPE.GOTO:
-                if next.type != TOKEN_TYPE.VAR: raise SyntaxError("Expected VAR after GOTO")
+                if next.type != TOKEN_TYPE.VAR: raise SyntaxError("Expected VAR after GOTO, got {next} instead")
                 root_node.append(Node(curr, [Node(next, [])]))
-            elif curr.type == TOKEN_TYPE.IF: pass
+                i += 2
+            elif curr.type == TOKEN_TYPE.IF:
+                i += 1
                 # if tokens[i+1].type != @TODO
             else:
                 if DEBUG: print(f'failed to parse token {curr}.')
@@ -274,7 +277,6 @@ class Interpreter(object):
     def assign(self, var:str, value):
         assert re.fullmatch('[A-Z]\\d?', var), f'Variable assign for invalid variable {var}'
         self.variables.update({var: value})
-
 
     pass
 
@@ -323,3 +325,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+

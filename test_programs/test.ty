@@ -1,16 +1,20 @@
 program "test"
 version 1 2 1
 i = 1 #
-INT32 i
 REAL32 i
+INT32 i
 "Hello you"
+lbl S
 # All equal to 69
 69
 69.
 #0x45
 #0b1000101
 Disp 69
-
+if i == 0 then
+i = i + 1
+GOTO S
+end
 
 x = (1. + 2.) * (3. + 4.) / 5. # COMMENT
 # COMMENT
