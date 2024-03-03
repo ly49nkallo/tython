@@ -227,43 +227,133 @@ class Parser(object):
     def syntax_analysis(cls, tokens:list):
         '''Take list of tokens and create a (potentially illegal) AST'''
         i = 0
-        def expect(*types):
-            j = 0
-            while j < len(types):
-                if not tokens[i+1+j].type != types[j]:
-                    raise SyntaxError(f"Expected token {types[j]} after {tokens[i]}, got {tokens[i+1+j]} instead.")
-                j += 1
+        def handle_expr(tokens:list) -> Node:
+            return
 
         if tokens[0].type is not TOKEN_TYPE.PROGRAM or tokens[1].type is not TOKEN_TYPE.STR_LIT:
             raise SyntaxError(f"Program must begin with a program name, got {tokens[0]} and {tokens[1]} instead")
 
         root_node = Node(TOKEN_TYPE.PROG, [])
         while i < len(tokens):
+            nodes = [Node(t, []) for t in tokens]
+            prev_prev = tokens[i-2] if i-2>=0 else None
             prev = tokens[i-1] if i-1>=0 else None
             curr = tokens[i]
             next = tokens[i+1] if i+1<len(tokens) else None
-            if curr.type == TOKEN_TYPE.PROGRAM:
+            next_next = tokens[i+2] if i+2<len(tokens) else None
+            if False: pass
+            # DATA TYPES
+            # INT32 = 'INT32'
+            elif curr.type == TOKEN_TYPE.INT32:
+                if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token INT32 must be first token in line")
+                if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after INT32, got {next} instead")
+                root_node.append(Node(curr, [Node(next, [])]))
+            # INT64 = 'INT64'
+            elif curr.type == TOKEN_TYPE.INT64:
+                if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token INT64 must be first token in line")
+                if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after INT64, got {next} instead")
+                root_node.append(Node(curr, [Node(next, [])]))
+            # REAL32 = 'REAL32'
+            elif curr.type == TOKEN_TYPE.REAL32:
+                if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token REAL32 must be first token in line")
+                if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after REAL32, got {next} instead")
+                root_node.append(Node(curr, [Node(next, [])]))
+            # REAL64 = 'REAL64'
+            elif curr.type == TOKEN_TYPE.REAL64:
+                if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token REAL64 must be first token in line")
+                if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after REAL32, got {next} instead")
+                root_node.append(Node(curr, [Node(next, [])]))
+            # CHAR8 = 'CHAR8'
+            elif curr.type == TOKEN_TYPE.CHAR8:
+                if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token CHAR8 must be first token in line")
+                if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after CHAR8, got {next} instead")
+                root_node.append(Node(curr, [Node(next, [])]))
+            # # MATHEMATICAL OPERATORS
+            # ASSIGN = '\='
+            elif curr.type == TOKEN_TYPE.ASSIGN:
+                if prev.type == TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after ASSIGN, got {prev} instead")
+                if next.type != TOKEN_TYPE.EXPR and next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR or EXPR after ASSIGN, got {next} instead")
+
+            # PLUS = '\+':
+            # MINUS = '\-'
+            # MUL = '\*'
+            # DIV = '\/'
+            # L_PAREN = '\('
+            # R_PAREN = '\)'
+            # # CONDITIONALS
+            # IF = 'IF'
+            elif curr.type == TOKEN_TYPE.IF:
+                i += 1
+                # if tokens[i+1].type != @TODO
+            # THEN = 'THEN'
+            # ELSE = 'ELSE'
+            # END = 'END'
+            # # FLOW CONTROL
+            # LABEL = 'LBL'
+            elif curr.type == TOKEN_TYPE.LABEL:
+                if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token LABEL must be first token in line")
+                if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after LABEL, got {next} instead")
+                root_node.append(Node(curr, [Node(next, [])]))
+                i += 2
+            # GOTO = 'GOTO'
+            elif curr.type == TOKEN_TYPE.GOTO:
+                if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token GOTO must be first token in line")
+                if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after GOTO, got {next} instead")
+                root_node.append(Node(curr, [Node(next, [])]))
+                i += 2
+            # # COMPARISON OPERATORS
+            # GREATER_THAN = '\>'
+            # LESS_THAN = '\<'
+            # GE_THAN = '>='
+            # LE_THAN = '<='
+            # EQUAL_TO = '=='
+            # NOT_EQUAL_TO = '\!='
+            # # PROGRAM CONTROL
+            # PROGRAM = 'PROGRAM'
+            elif curr.type == TOKEN_TYPE.PROGRAM:
                 if i != 0: raise SyntaxError("PROGRAM token must be first in program")
                 if next.type != TOKEN_TYPE.STR_LIT:
                     raise SyntaxError(f"Expected STR_LIT, got {next.type}")
                 root_node.append(Node(curr, [Node(next, [])]))
                 i += 2 # digest next token
+            # VERSION = 'VERSION'
             elif curr.type == TOKEN_TYPE.VERSION:
                 if not all([tokens[j].type == TOKEN_TYPE.INT_LIT for j in range(i+1, i+4)]):
                     raise SyntaxError(f"Expected INT_LIT after VERSION token, got {[tokens[j].type for j in range(i+1, i+4)]}")
                 root_node.append(Node(curr, [Node(tokens[j], []) for j in range(i+1, i+4)]))
                 i += 4
-            elif curr.type == TOKEN_TYPE.LABEL:
-                if next.type != TOKEN_TYPE.VAR: raise SyntaxError("Expected VAR after LABEL, got {next} instead")
-                root_node.append(Node(curr, [Node(next, [])]))
-                i += 2
-            elif curr.type == TOKEN_TYPE.GOTO:
-                if next.type != TOKEN_TYPE.VAR: raise SyntaxError("Expected VAR after GOTO, got {next} instead")
-                root_node.append(Node(curr, [Node(next, [])]))
-                i += 2
-            elif curr.type == TOKEN_TYPE.IF:
-                i += 1
-                # if tokens[i+1].type != @TODO
+            # IMPLICIT = 'IMPLICIT'
+            # CALL = 'CALL'
+            # # VARIABLE LITERALS
+            # CHAR_LIT = '\'.\''
+            # STR_LIT = '\\".*\\"'
+            # INT_LIT = '\\d+'
+            # FLOAT_LIT = '\\d+\.\\d*'
+            # HEX_LIT = '0x[A-F0-9]+'
+            # BIN_LIT = '0b[01]+'
+            # # VARIABLES
+            # VAR = '[A-Z]\\d?'
+            # ARRAY_VAR = '@[A-Z]\\d?'
+            # # COMMANDS
+            # DISP = 'DISP'
+            # DISP_STR = 'DISPSTR'
+            # # TRIG FUNCTIONS
+            # SIN = 'SIN'
+            # COS = 'COS'
+            # TAN = 'TAN'
+            # COT = 'COT'
+            # SEC = 'SEC'
+            # CSC = 'CSC'
+            # # ARRAY FUNCTIONS
+            # DIM = 'DIM'
+            # # STRUCTURE TOKENS
+            # COMMA = '\,'
+            # LINE_BREAK = 1
+            # EOF = 2
+            # EXPR = 3
+            # PROG = 4
+            # BIN_EXPR = 5
+            # STMT = 6
             else:
                 if DEBUG: print(f'failed to parse token {curr}.')
                 i += 1
