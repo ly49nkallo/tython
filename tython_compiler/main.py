@@ -12,76 +12,10 @@ import typing
 import regex as re
 
 from pprint import pprint
+from token_types import TOKEN_TYPE
 
 LOGFILE:pathlib.Path = pathlib.Path("./log.log")
 COMMENT_DELIM = '#'
-
-class TOKEN_TYPE(enum.Enum):
-        # DATA TYPES
-        INT32 = 'INT32'
-        INT64 = 'INT64'
-        REAL32 = 'REAL32'
-        REAL64 = 'REAL64'
-        CHAR8 = 'CHAR8'
-        # MATHEMATICAL OPERATORS
-        ASSIGN = '\='
-        PLUS = '\+'
-        MINUS = '\-'
-        MUL = '\*'
-        DIV = '\/'
-        L_PAREN = '\('
-        R_PAREN = '\)'
-        # CONDITIONALS
-        IF = 'IF'
-        THEN = 'THEN'
-        ELSE = 'ELSE'
-        END = 'END'
-        # FLOW CONTROL
-        LABEL = 'LBL'
-        GOTO = 'GOTO'
-        # COMPARISON OPERATORS
-        GREATER_THAN = '\>'
-        LESS_THAN = '\<'
-        GE_THAN = '>='
-        LE_THAN = '<='
-        EQUAL_TO = '=='
-        NOT_EQUAL_TO = '\!='
-        # PROGRAM CONTROL
-        PROGRAM = 'PROGRAM'
-        VERSION = 'VERSION'
-        IMPLICIT = 'IMPLICIT'
-        CALL = 'CALL'
-        # VARIABLE LITERALS
-        CHAR_LIT = '\'.\''
-        STR_LIT = '\\".*\\"'
-        INT_LIT = '\\d+'
-        FLOAT_LIT = '\\d+\.\\d*'
-        HEX_LIT = '0x[A-F0-9]+'
-        BIN_LIT = '0b[01]+'
-        # VARIABLES
-        VAR = '[A-Z]\\d?'
-        ARRAY_VAR = '@[A-Z]\\d?'
-        # COMMANDS
-        DISP = 'DISP'
-        DISP_STR = 'DISPSTR'
-        # TRIG FUNCTIONS
-        SIN = 'SIN'
-        COS = 'COS'
-        TAN = 'TAN'
-        COT = 'COT'
-        SEC = 'SEC'
-        CSC = 'CSC'
-        # ARRAY FUNCTIONS
-        DIM = 'DIM'
-        # STRUCTURE TOKENS
-        COMMA = '\,'
-        LINE_BREAK = 1
-        EOF = 2
-        EXPR = 3
-        PROG = 4
-        BIN_EXPR = 5
-        STMT = 6
-
 
 REQUIRES_VALUE:set = {
         TOKEN_TYPE.CHAR_LIT,
@@ -93,7 +27,17 @@ REQUIRES_VALUE:set = {
         TOKEN_TYPE.VAR,
         TOKEN_TYPE.ARRAY_VAR,
     }
+NUMERALS:set = {
+    TOKEN_TYPE.INT32,
+    TOKEN_TYPE.INT64,
+    TOKEN_TYPE.REAL32,
+    TOKEN_TYPE.REAL64
+    }
 
+ORDER_OF_OPERATIONS:list = [
+    (TOKEN_TYPE.MUL, TOKEN_TYPE.DIV),
+    (TOKEN_TYPE.PLUS, TOKEN_TYPE.MINUS),
+    ]
 
 class Token(object):
     '''A lexical unit of code correspinding to a certain, specific function.'''
@@ -128,7 +72,7 @@ class Node(object):
         if len(self.children) != 0: ret += '\n'
         for c in self.children:
             assert isinstance(c, Node), str(type(c))
-            ret += ' ' * (4*tabs) + c._repr_helper(tabs+1) + '\n'
+            ret += ' ' * (4*tabs) + c._repr_helper(tabs+1) + '\n' #RECURSION >:(
         if len(self.children) != 0: ret += ' ' * (4*tabs)
         return ret
 
@@ -137,6 +81,7 @@ class Node(object):
 
 class Parser(object):
     '''Parse code into AST'''
+
     @classmethod
     def lexical_analysis(cls, text:str) -> list:
         '''Responsible for taking raw text input and generating a list of tokens.'''
@@ -228,12 +173,22 @@ class Parser(object):
         '''Take list of tokens and create a (potentially illegal) AST'''
         i = 0
         def handle_expr(tokens:list) -> Node:
-            return
+            print(tokens)
+            root = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number), [])
+            stack = []
+            for operations in ORDER_OF_OPERATIONS:
+                for token in tokens:
+                    if token in operations:
+                        
+                        pass
+            
+            return root
+
 
         if tokens[0].type is not TOKEN_TYPE.PROGRAM or tokens[1].type is not TOKEN_TYPE.STR_LIT:
             raise SyntaxError(f"Program must begin with a program name, got {tokens[0]} and {tokens[1]} instead")
 
-        root_node = Node(TOKEN_TYPE.PROG, [])
+        root_node = Node(Token(TOKEN_TYPE.PROG, 0), [])
         while i < len(tokens):
             nodes = [Node(t, []) for t in tokens]
             prev_prev = tokens[i-2] if i-2>=0 else None
@@ -248,31 +203,44 @@ class Parser(object):
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token INT32 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after INT32, got {next} instead")
                 root_node.append(Node(curr, [Node(next, [])]))
+                i += 2
             # INT64 = 'INT64'
             elif curr.type == TOKEN_TYPE.INT64:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token INT64 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after INT64, got {next} instead")
                 root_node.append(Node(curr, [Node(next, [])]))
+                i += 2
             # REAL32 = 'REAL32'
             elif curr.type == TOKEN_TYPE.REAL32:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token REAL32 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after REAL32, got {next} instead")
                 root_node.append(Node(curr, [Node(next, [])]))
+                i += 2
             # REAL64 = 'REAL64'
             elif curr.type == TOKEN_TYPE.REAL64:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token REAL64 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after REAL32, got {next} instead")
                 root_node.append(Node(curr, [Node(next, [])]))
+                i += 2
             # CHAR8 = 'CHAR8'
             elif curr.type == TOKEN_TYPE.CHAR8:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token CHAR8 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after CHAR8, got {next} instead")
                 root_node.append(Node(curr, [Node(next, [])]))
+                i += 2
             # # MATHEMATICAL OPERATORS
             # ASSIGN = '\='
             elif curr.type == TOKEN_TYPE.ASSIGN:
-                if prev.type == TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after ASSIGN, got {prev} instead")
-                if next.type != TOKEN_TYPE.EXPR and next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR or EXPR after ASSIGN, got {next} instead")
+                if prev.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR before ASSIGN, got {prev} instead")
+                j = i+1
+                scan = []
+                while tokens[j].type != TOKEN_TYPE.LINE_BREAK and tokens[j].type != TOKEN_TYPE.EOF and j < len(tokens):
+                    scan.append(tokens[j])
+                    j += 1
+                expr_node = handle_expr(scan)
+                root_node.append(expr_node)
+                i += 1
+
 
             # PLUS = '\+':
             # MINUS = '\-'
@@ -357,7 +325,7 @@ class Parser(object):
             else:
                 if DEBUG: print(f'failed to parse token {curr}.')
                 i += 1
-
+            print(i)
         return root_node
 
 class Interpreter(object):
