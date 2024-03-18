@@ -9,7 +9,7 @@ import time
 import argparse
 import enum
 import typing
-import regex as re
+import re
 
 from pprint import pprint
 from token_types import TOKEN_TYPE
