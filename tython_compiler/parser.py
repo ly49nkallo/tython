@@ -134,17 +134,22 @@ class Parser(object):
     def syntax_analysis(cls, tokens:list):
         '''Take list of tokens and create a (potentially illegal) AST'''
         i = 0
+        class StackFrame:
+            def __init__(self, content, pointer):
+                self.content = content
+                self.pointer = pointer
+
         def handle_expr(tokens:list) -> Node:
-            print(tokens)
-            root = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number), [])
-            stack = []
-            for operations in ORDER_OF_OPERATIONS:
-                for token in tokens:
-                    if token in operations:
-                        
-                        pass
-            
+            root = Node(TOKEN_TYPE.EXPR, [])
+            state = []
+            stack:list = []
+
+            for token in tokens:
+                state.append(token)
+                
+
             return root
+            
 
 
         if tokens[0].type is not TOKEN_TYPE.PROGRAM or tokens[1].type is not TOKEN_TYPE.STR_LIT:
@@ -152,7 +157,6 @@ class Parser(object):
 
         root_node = Node(Token(TOKEN_TYPE.PROG, 0), [])
         while i < len(tokens):
-            nodes = [Node(t, []) for t in tokens]
             prev_prev = tokens[i-2] if i-2>=0 else None
             prev = tokens[i-1] if i-1>=0 else None
             curr = tokens[i]
