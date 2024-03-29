@@ -140,12 +140,33 @@ class Parser(object):
                 self.pointer = pointer
 
         def handle_expr(tokens:list) -> Node:
+            print(tokens)
             root = Node(TOKEN_TYPE.EXPR, [])
             state = []
             stack:list = []
-
+            nodes = [Node(t, []) for t in tokens]
+            # handle parenthesis @TODO
+            f = False
             for token in tokens:
-                state.append(token)
+                if token.type == TOKEN_TYPE.L_PAREN:
+                    depth = 0
+                    while token.type not in [TOKEN_TYPE.LINE_BREAK, TOKEN_TYPE.EOF]:
+                        pass #@TODO
+            for op_level in ORDER_OF_OPERATIONS:
+                for op in op_level:
+                    try:
+                        idx = nodes.index(op)
+                    except ValueError:
+                        continue
+                    if idx < 2 or idx > len(nodes) - 1:
+                        raise SyntaxError(f"Binary operator {op} too close to ends of EXPR")
+                    lhs:Node = nodes[idx - 1]
+                    rhs:Node = nodes[idx + 1]
+                    if lhs.type not in TOKEN_TYPE.NUMERALS:
+                        raise SyntaxError(f"Expected number before binary operator, got {lhs.type} instead")
+                    if rhs.type not in TOKEN_TYPE.NUMERALS:
+                        raise SyntaxError(f"Expected number before binary operator, got {rhs.type} instead")
+                    
                 
 
             return root
@@ -291,5 +312,5 @@ class Parser(object):
             else:
                 if DEBUG: print(f'failed to parse token {curr}.')
                 i += 1
-            print(i)
+            if DEBUG: print(i)
         return root_node

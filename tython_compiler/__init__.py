@@ -3,7 +3,7 @@ from .parser import *
 import token
 
 def set_debug():
-    '''Set debug flag in nessisary modules to \'True\''''
+    '''Set debug flag in nessesary modules to \'True\''''
     parser.DEBUG = True
     token.DEBUG = True
 
