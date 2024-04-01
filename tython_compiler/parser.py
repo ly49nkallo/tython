@@ -16,7 +16,7 @@ COMMENT_DELIM = '#'
 DEBUG = False
 
 class Node(object):
-    def __init__(self, token:Token, children:list, name:str=None):
+    def __init__(self, token:Token, children:list=[], /, name:str=None):
         self.name:typing.Optional[str] = name
         self.token:Token = token
         self.children:list = children
@@ -30,7 +30,7 @@ class Node(object):
 
     def _repr_helper(self, tabs:int):
         if self.name is not None: ret = self.name
-        else: ret = repr(self.token)
+        else: ret = repr(self.token)[len("TOKEN_TYPE")+1:]
         if len(self.children) != 0: ret += '\n'
         for c in self.children:
             assert isinstance(c, Node), str(type(c))
@@ -109,6 +109,20 @@ class Parser(object):
         if DEBUG: pprint(buffers)
         for buffer in buffers:
             cls.analyze_buffer(buffer, tokens)
+        # digest leading newlines
+        i = 0
+        for token in tokens:
+            if token.type == TOKEN_TYPE.LINE_BREAK:
+                i += 1
+            else: break
+        tokens = tokens[i:]
+        # digest trailing newlines
+        i = 0
+        for token in reversed(tokens):
+            if token.type == TOKEN_TYPE.LINE_BREAK:
+                i += 1
+            else: break
+        tokens = tokens[:-i]
         tokens.append(Token(TOKEN_TYPE.EOF, current_line_number))
         if DEBUG: pprint(tokens)
         return tokens
@@ -140,35 +154,29 @@ class Parser(object):
                 self.pointer = pointer
 
         def handle_expr(tokens:list) -> Node:
+            '''
+            MUL -> (NUM|EXPR) * (NUM|EXPR)
+            ADD -> (NUM|EXPR) + (NUM|EXPR)
+            EXPR -> \( .* )
+            NUM -> (0-9)+
+            '''
             print(tokens)
-            root = Node(TOKEN_TYPE.EXPR, [])
+            root = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number), [])
             state = []
             stack:list = []
-            nodes = [Node(t, []) for t in tokens]
-            # handle parenthesis @TODO
-            f = False
-            for token in tokens:
-                if token.type == TOKEN_TYPE.L_PAREN:
-                    depth = 0
-                    while token.type not in [TOKEN_TYPE.LINE_BREAK, TOKEN_TYPE.EOF]:
-                        pass #@TODO
-            for op_level in ORDER_OF_OPERATIONS:
-                for op in op_level:
-                    try:
-                        idx = nodes.index(op)
-                    except ValueError:
-                        continue
-                    if idx < 2 or idx > len(nodes) - 1:
-                        raise SyntaxError(f"Binary operator {op} too close to ends of EXPR")
-                    lhs:Node = nodes[idx - 1]
-                    rhs:Node = nodes[idx + 1]
-                    if lhs.type not in TOKEN_TYPE.NUMERALS:
-                        raise SyntaxError(f"Expected number before binary operator, got {lhs.type} instead")
-                    if rhs.type not in TOKEN_TYPE.NUMERALS:
-                        raise SyntaxError(f"Expected number before binary operator, got {rhs.type} instead")
-                    
-                
-
+            nodes = [Node(token) for token in tokens]
+            for node in nodes:
+                state.append(node)
+                # (NUM | EXPR) ( + | - | * | / ) (NUM | EXPR)
+                if len(state) == 3:
+                    if ((state[0].token.type in NUMERALS or state[0].token.type == TOKEN_TYPE.EXPR)
+                        and (state[1].token.type in NUMERICAL_OPERATORS)
+                        and (state[2].token.type in NUMERALS or state[2].token.type == TOKEN_TYPE.EXPR)):
+                        print('found state', state)
+                        state[1].append(state[0])
+                        state[1].append(state[2])
+                        root.append(state[1]) 
+                        state = []
             return root
             
 
