@@ -25,7 +25,7 @@ class Node(object):
         return (len(self.children) == 0)
 
     def append(self, other:'Node'):
-        assert isinstance(other, Node)
+        assert isinstance(other, Node), f"Expected Node, got {type(other)} instead"
         self.children.append(other)
 
     def _repr_helper(self, tabs:int):
@@ -160,24 +160,40 @@ class Parser(object):
             EXPR -> \( .* )
             NUM -> (0-9)+
             '''
-            print(tokens)
-            root = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number), [])
-            state = []
-            stack:list = []
+            # Steps
+            # 1. Recursively evaluate parentheses
+            # 2. In reverse order of operation precedence, find all operations and combine left to right,
+            #    calling this function recursively to generate the node below
+            # Only this function can create EXPR nodes
+            root_node = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number))
             nodes = [Node(token) for token in tokens]
+            new_nodes = []
+            scan = []
+            depth = 0
             for node in nodes:
-                state.append(node)
-                # (NUM | EXPR) ( + | - | * | / ) (NUM | EXPR)
-                if len(state) == 3:
-                    if ((state[0].token.type in NUMERALS or state[0].token.type == TOKEN_TYPE.EXPR)
-                        and (state[1].token.type in NUMERICAL_OPERATORS)
-                        and (state[2].token.type in NUMERALS or state[2].token.type == TOKEN_TYPE.EXPR)):
-                        print('found state', state)
-                        state[1].append(state[0])
-                        state[1].append(state[2])
-                        root.append(state[1]) 
-                        state = []
-            return root
+                if node.token.type == TOKEN_TYPE.L_PAREN:
+                    depth += 1
+                elif node.token.type == TOKEN_TYPE.R_PAREN:
+                    depth -= 1
+                    if depth < 0:
+                        raise SyntaxError("Too many right parentheses")
+                    if depth == 0:
+                        scan.append(node)
+                if depth == 0:
+                    new_nodes.append(node)
+                    if len(scan) > 0:
+                        new_node = handle_expr([s.token for s in scan][1:-1])
+                        scan = []
+                        new_nodes.append(new_node)
+                elif depth > 0:
+                        scan.append(node)
+            if depth != 0:
+                raise SyntaxError("Not all parentheses closed")
+            for op_level in reversed(ORDER_OF_OPERATIONS):
+                for op in op_level:
+                    ...
+            return root_node
+            
             
 
 

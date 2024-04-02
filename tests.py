@@ -20,16 +20,16 @@ def test_case(func):
 def test_case_1():
     program = '''
     PROGRAM "test 1"
-    x = 1 + 2
+    x = (1 + 2) + 3 * 4
     # y = 3 + 4
     # z = 5 * 6 + 7
     '''
     tokens = tc.Parser.lexical_analysis(program)
     tree = tc.Parser.syntax_analysis(tokens)
-    print(tree.children[1].children[0].children[0].children[1].token)
-    pass
+    print(tree)
 
 if __name__ == '__main__':
+    tc.set_debug()
     start_time = time.time()
     test_case_1() 
     print(f"All test cases passed in {(time.time() - start_time):0.4f} seconds")
