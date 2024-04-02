@@ -194,6 +194,7 @@ class Parser(object):
                 raise SyntaxError("Not all parentheses closed")
             nodes = new_nodes
             new_nodes = nodes.copy()
+            # Smushes together operation nodes in order of operations
             for op_level in reversed(ORDER_OF_OPERATIONS):
                 for op in op_level:
                     i = 0
@@ -216,7 +217,11 @@ class Parser(object):
                             new_nodes.insert(i-1, new_node)
                             i -= 3
                         i += 1
-
+            # make sure there arnt any orphaned numbers left
+            if len(new_nodes) != 1:
+                for node in new_nodes:
+                    if node.token.type in NUMERALS:
+                        raise SyntaxError(f"Orphaned numeral token {node}")
             root_node.children = new_nodes
             return root_node
             
