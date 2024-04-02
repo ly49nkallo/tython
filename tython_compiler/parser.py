@@ -35,7 +35,9 @@ class Node(object):
         for c in self.children:
             assert isinstance(c, Node), str(type(c))
             ret += ' ' * (4*tabs) + c._repr_helper(tabs+1) + '\n' #RECURSION >:(
-        if len(self.children) != 0: ret += ' ' * (4*tabs)
+        if len(self.children) != 0: 
+            ret = ret[:-1]
+            #ret += ' ' * (4*tabs) # neater this way
         return ret
 
     def __repr__(self):
@@ -180,7 +182,8 @@ class Parser(object):
                     if depth == 0:
                         scan.append(node)
                 if depth == 0:
-                    new_nodes.append(node)
+                    if node.token.type != TOKEN_TYPE.R_PAREN:
+                        new_nodes.append(node)
                     if len(scan) > 0:
                         new_node = handle_expr([s.token for s in scan][1:-1])
                         scan = []
@@ -189,9 +192,32 @@ class Parser(object):
                         scan.append(node)
             if depth != 0:
                 raise SyntaxError("Not all parentheses closed")
+            nodes = new_nodes
+            new_nodes = nodes.copy()
             for op_level in reversed(ORDER_OF_OPERATIONS):
                 for op in op_level:
-                    ...
+                    i = 0
+                    while i < len(new_nodes):
+                        node = new_nodes[i]
+                        if node.token.type == op and len(node.children) == 0:
+                            try: # @BUG nodes doesnt contain the correct information
+                                lhs = new_nodes[i-1]
+                                rhs = new_nodes[i+1]
+                                assert i-1 >= 0
+                            except:
+                                raise SyntaxError("Structure of expression invalid")
+                            if not (lhs.token.type in NUMERALS or lhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
+                                raise SyntaxError(f"Structure of expression invalid, got {lhs.token.type} instead")
+                            if not (rhs.token.type in NUMERALS or rhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
+                                raise SyntaxError(f"Structure of expression invalid, got {rhs.token.type} instead")
+                            new_node = node
+                            new_node.children = [lhs, rhs]
+                            new_nodes = new_nodes[0:i-1] + new_nodes[i+2:]
+                            new_nodes.insert(i-1, new_node)
+                            i -= 3
+                        i += 1
+
+            root_node.children = new_nodes
             return root_node
             
             
@@ -249,7 +275,7 @@ class Parser(object):
                     scan.append(tokens[j])
                     j += 1
                 expr_node = handle_expr(scan)
-                root_node.append(expr_node)
+                root_node.append(Node(curr, [Node(prev), expr_node]))
                 i += 1
 
 

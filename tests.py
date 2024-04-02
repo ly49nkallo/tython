@@ -21,8 +21,7 @@ def test_case_1():
     program = '''
     PROGRAM "test 1"
     x = (1 + 2) + 3 * 4
-    # y = 3 + 4
-    # z = 5 * 6 + 7
+    y = (1 + 2 * 3 + 4 * 5 / 6) - 7 + 8 / 9
     '''
     tokens = tc.Parser.lexical_analysis(program)
     tree = tc.Parser.syntax_analysis(tokens)
