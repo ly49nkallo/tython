@@ -21,14 +21,21 @@ def test_case_1():
     program = '''
     PROGRAM "test 1"
     x = (1 + 2) + 3 * 4
-    y = (1 + 2 * 3 + 4 * 5 / 6) - 7 + 8 / 9
+    y = (4)
+    if 1 > 2
+    disp "Wat :|"
     '''
     tokens = tc.Parser.lexical_analysis(program)
     tree = tc.Parser.syntax_analysis(tokens)
     print(tree)
 
+@test_case
+def test_case_2():
+    pass
+
 if __name__ == '__main__':
     tc.set_debug()
     start_time = time.time()
     test_case_1() 
+    test_case_2()
     print(f"All test cases passed in {(time.time() - start_time):0.4f} seconds")

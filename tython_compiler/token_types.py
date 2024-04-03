@@ -27,13 +27,20 @@ class TOKEN_TYPE(enum.Enum):
         # FLOW CONTROL
         LABEL = 'LBL'
         GOTO = 'GOTO'
-        # COMPARISON OPERATORS
+        # BOOLEAN OPERATORS
         GREATER_THAN = '\>'
         LESS_THAN = '\<'
         GE_THAN = '>='
         LE_THAN = '<='
         EQUAL_TO = '=='
         NOT_EQUAL_TO = '\!='
+        # LOGICAL OPERATORS
+        LOGICAL_AND = 'AND'
+        LOGICAL_OR = 'OR'
+        LOGICAL_NOT = 'NOT'
+        LOGICAL_NAND = 'NAND'
+        LOGICAL_XOR = 'XOR'
+        LOGICAL_NOR = 'NOR'
         # PROGRAM CONTROL
         PROGRAM = 'PROGRAM'
         VERSION = 'VERSION'
@@ -67,8 +74,10 @@ class TOKEN_TYPE(enum.Enum):
         EOF = 2
         EXPR = 3
         PROG = 4
-        BIN_EXPR = 5
-        STMT = 6
+        BOOL_EXPR = 5
+        LOGIC_EXPR = 6
+        
+        # STMT = 6
 
 REQUIRES_VALUE:set = {
     TOKEN_TYPE.CHAR_LIT,
@@ -85,12 +94,21 @@ NUMERALS:set = {
     TOKEN_TYPE.INT_LIT,
     TOKEN_TYPE.FLOAT_LIT
 }
-
 NUMERICAL_OPERATORS:set = {
     TOKEN_TYPE.PLUS,
     TOKEN_TYPE.MINUS,
     TOKEN_TYPE.MUL,
     TOKEN_TYPE.DIV,
+}
+BOOLEAN_OPERATORS:set = {
+    TOKEN_TYPE.EQUAL_TO,
+    TOKEN_TYPE.NOT_EQUAL_TO,
+    TOKEN_TYPE.LE_THAN,
+    TOKEN_TYPE.LESS_THAN,
+    TOKEN_TYPE.GE_THAN,
+    TOKEN_TYPE.GREATER_THAN,
+}
+LOGICAL_OPERATORS:set = {
 }
 ORDER_OF_OPERATIONS:list = [
     (TOKEN_TYPE.MUL, TOKEN_TYPE.DIV),

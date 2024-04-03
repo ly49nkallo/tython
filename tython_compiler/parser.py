@@ -34,7 +34,7 @@ class Node(object):
         if len(self.children) != 0: ret += '\n'
         for c in self.children:
             assert isinstance(c, Node), str(type(c))
-            ret += ' ' * (4*tabs) + c._repr_helper(tabs+1) + '\n' #RECURSION >:(
+            ret += ' ' * (4*tabs) + c._repr_helper(tabs+1) + '\n'
         if len(self.children) != 0: 
             ret = ret[:-1]
             #ret += ' ' * (4*tabs) # neater this way
@@ -149,13 +149,9 @@ class Parser(object):
     @classmethod
     def syntax_analysis(cls, tokens:list):
         '''Take list of tokens and create a (potentially illegal) AST'''
-        i = 0
-        class StackFrame:
-            def __init__(self, content, pointer):
-                self.content = content
-                self.pointer = pointer
-
+        
         def handle_expr(tokens:list) -> Node:
+            '''Handles the creation of mathematical EXPR nodes'''
             '''
             MUL -> (NUM|EXPR) * (NUM|EXPR)
             ADD -> (NUM|EXPR) + (NUM|EXPR)
@@ -199,11 +195,11 @@ class Parser(object):
                 for op in op_level:
                     i = 0
                     while i < len(new_nodes):
-                        node = new_nodes[i]
-                        if node.token.type == op and len(node.children) == 0:
+                        node:Node = new_nodes[i]
+                        if node.token.type == op and node.is_leaf():
                             try: # @BUG nodes doesnt contain the correct information
-                                lhs = new_nodes[i-1]
-                                rhs = new_nodes[i+1]
+                                lhs:Node = new_nodes[i-1]
+                                rhs:Node = new_nodes[i+1]
                                 assert i-1 >= 0
                             except:
                                 raise SyntaxError("Structure of expression invalid")
@@ -224,20 +220,36 @@ class Parser(object):
                         raise SyntaxError(f"Orphaned numeral token {node}")
             root_node.children = new_nodes
             return root_node
-            
-            
 
+        def handle_bool_expr(tokens:list) -> Node:
+            '''
+            Handles a boolean expr (BOOL_EXPR) Nodes of the form
+            EXPR ("<", "<=", ">", ">=", "!=", "==") EXPR
+            and returns a node BOOL_EXPR
+            '''
+            root_node = Node(Token(TOKEN_TYPE.BOOL_EXPR, line_number=tokens[0].line_number))
+            return root_node
+        
+        def handle_logical_expr(tokens:list) -> Node:
+            '''
+            Handles a logical expr (LOGIC_EXPR) Nodes of the form
+            (BOOL_EXPR | LOGIC_EXPR) ("AND", "OR", "NOT", "NOR", "XOR", "NAND") (BOOL_EXPR | LOGIC_EXPR)
+            and returns a node BOOL_EXPR
+            '''
+            root_node = Node(Token(TOKEN_TYPE.LOGIC_EXPR, line_number=tokens[0].line_number))
+            return root_node
 
         if tokens[0].type is not TOKEN_TYPE.PROGRAM or tokens[1].type is not TOKEN_TYPE.STR_LIT:
             raise SyntaxError(f"Program must begin with a program name, got {tokens[0]} and {tokens[1]} instead")
 
         root_node = Node(Token(TOKEN_TYPE.PROG, 0), [])
+        i = 0
         while i < len(tokens):
-            prev_prev = tokens[i-2] if i-2>=0 else None
-            prev = tokens[i-1] if i-1>=0 else None
-            curr = tokens[i]
-            next = tokens[i+1] if i+1<len(tokens) else None
-            next_next = tokens[i+2] if i+2<len(tokens) else None
+            prev_prev:Token = tokens[i-2] if i-2>=0 else None
+            prev:Token = tokens[i-1] if i-1>=0 else None
+            curr:Token = tokens[i]
+            next:Token = tokens[i+1] if i+1<len(tokens) else None
+            next_next:Token = tokens[i+2] if i+2<len(tokens) else None
             if False: pass
             # DATA TYPES
             # INT32 = 'INT32'
@@ -281,9 +293,7 @@ class Parser(object):
                     j += 1
                 expr_node = handle_expr(scan)
                 root_node.append(Node(curr, [Node(prev), expr_node]))
-                i += 1
-
-
+                i = j+1
             # PLUS = '\+':
             # MINUS = '\-'
             # MUL = '\*'
@@ -293,8 +303,16 @@ class Parser(object):
             # # CONDITIONALS
             # IF = 'IF'
             elif curr.type == TOKEN_TYPE.IF:
-                i += 1
-                # if tokens[i+1].type != @TODO
+                if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token IF must be first token in line")
+                # Scan rest of line
+                j = i+1
+                scan = []
+                while tokens[j].type not in {TOKEN_TYPE.LINE_BREAK, TOKEN_TYPE.EOF, TOKEN_TYPE.THEN} and j < len(tokens):
+                    scan.append(tokens[j])
+                    j += 1
+                bool_expr_node = handle_bool_expr(scan)
+                root_node.append(Node(curr, [bool_expr_node]))
+                i = j+1
             # THEN = 'THEN'
             # ELSE = 'ELSE'
             # END = 'END'
@@ -311,13 +329,6 @@ class Parser(object):
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after GOTO, got {next} instead")
                 root_node.append(Node(curr, [Node(next, [])]))
                 i += 2
-            # # COMPARISON OPERATORS
-            # GREATER_THAN = '\>'
-            # LESS_THAN = '\<'
-            # GE_THAN = '>='
-            # LE_THAN = '<='
-            # EQUAL_TO = '=='
-            # NOT_EQUAL_TO = '\!='
             # # PROGRAM CONTROL
             # PROGRAM = 'PROGRAM'
             elif curr.type == TOKEN_TYPE.PROGRAM:
