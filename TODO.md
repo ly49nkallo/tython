@@ -1,4 +1,5 @@
 # To Do List
 
-- [ ] Logic to handle expressions 
-- [ ] ...
+- [x] Logic to handle expressions 
+- [x] Boolean operator
+- [ ] Logical operator
