@@ -163,6 +163,12 @@ class Parser(object):
             # 2. In reverse order of operation precedence, find all operations and combine left to right,
             #    calling this function recursively to generate the node below
             # Only this function can create EXPR nodes
+            
+            # quick return for lone number
+            if len(tokens) == 1:
+                if tokens[0].type in NUMERALS:
+                    return Node(tokens[0])
+
             root_node = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number))
             nodes = [Node(token) for token in tokens]
             new_nodes = []
@@ -228,13 +234,32 @@ class Parser(object):
             and returns a node BOOL_EXPR
             '''
             root_node = Node(Token(TOKEN_TYPE.BOOL_EXPR, line_number=tokens[0].line_number))
+            # ensure there is exactly one boolean operator in the token stream
+            c = 0
+            for idx, token in enumerate(tokens):
+                if token.type in BOOLEAN_OPERATORS:
+                    c += 1
+                    op_idx = idx
+            if c == 0:
+                raise SyntaxError(f"Bool expr expects at least one boolean operator. Got tokens {tokens}.")
+            elif c > 1:
+                raise SyntaxError(f"Expected at most one boolean operator. Got tokens {tokens}.")
+            del c
+            lhs = handle_expr(tokens[:op_idx])
+            rhs = handle_expr(tokens[op_idx+1:])
+            op = tokens[op_idx]
+            print(lhs)
+            print(rhs)
+            root_node.children = [Node(op, [lhs, rhs])]
+            print(root_node)
+            # root_node.append(rhs)
             return root_node
         
         def handle_logical_expr(tokens:list) -> Node:
             '''
             Handles a logical expr (LOGIC_EXPR) Nodes of the form
             (BOOL_EXPR | LOGIC_EXPR) ("AND", "OR", "NOT", "NOR", "XOR", "NAND") (BOOL_EXPR | LOGIC_EXPR)
-            and returns a node BOOL_EXPR
+            and returns a node LOGIC_EXPR or a BOOL_EXPR (depending on conciceness)
             '''
             root_node = Node(Token(TOKEN_TYPE.LOGIC_EXPR, line_number=tokens[0].line_number))
             return root_node
@@ -284,16 +309,18 @@ class Parser(object):
                 i += 2
             # # MATHEMATICAL OPERATORS
             # ASSIGN = '\='
-            elif curr.type == TOKEN_TYPE.ASSIGN:
-                if prev.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR before ASSIGN, got {prev} instead")
-                j = i+1
-                scan = []
-                while tokens[j].type != TOKEN_TYPE.LINE_BREAK and tokens[j].type != TOKEN_TYPE.EOF and j < len(tokens):
-                    scan.append(tokens[j])
-                    j += 1
-                expr_node = handle_expr(scan)
-                root_node.append(Node(curr, [Node(prev), expr_node]))
-                i = j+1
+            elif curr.type == TOKEN_TYPE.VAR:
+                if next.type == TOKEN_TYPE.ASSIGN:
+                    j = i+2
+                    scan = []
+                    while tokens[j].type != TOKEN_TYPE.LINE_BREAK and tokens[j].type != TOKEN_TYPE.EOF and j < len(tokens):
+                        scan.append(tokens[j])
+                        j += 1
+                    expr_node = handle_expr(scan)
+                    root_node.append(Node(curr, [Node(prev), expr_node]))
+                    i = j+1
+                else:
+                    raise SyntaxError("Expected expression after variable instance")
             # PLUS = '\+':
             # MINUS = '\-'
             # MUL = '\*'
@@ -344,7 +371,16 @@ class Parser(object):
                 root_node.append(Node(curr, [Node(tokens[j], []) for j in range(i+1, i+4)]))
                 i += 4
             # IMPLICIT = 'IMPLICIT'
+            elif curr.type == TOKEN_TYPE.IMPLICIT:
+                if next.type not in DATA_TYPES:
+                    raise SyntaxError(f"Expected DATA_TYPE after IMPLICIT, got {next.type} instead")
+                if next_next.type != TOKEN_TYPE.VAR:
+                    raise SyntaxError(f"Expected VAR in IMPLICIT statement, got {next_next.type} instead")
+                root_node.append(Node(curr, [Node(next), Node(next_next)]))
+                i += 3
             # CALL = 'CALL'
+            elif curr.type == TOKEN_TYPE.CALL:
+                raise NotImplementedError()
             # # VARIABLE LITERALS
             # CHAR_LIT = '\'.\''
             # STR_LIT = '\\".*\\"'
@@ -370,7 +406,12 @@ class Parser(object):
             # # STRUCTURE TOKENS
             # COMMA = '\,'
             # LINE_BREAK = 1
+            elif curr.type == TOKEN_TYPE.LINE_BREAK:
+                i += 1
             # EOF = 2
+            elif curr.type == TOKEN_TYPE.EOF:
+                assert i == len(tokens) - 1 # last token
+                i += 1
             # EXPR = 3
             # PROG = 4
             # BIN_EXPR = 5
@@ -378,5 +419,4 @@ class Parser(object):
             else:
                 if DEBUG: print(f'failed to parse token {curr}.')
                 i += 1
-            if DEBUG: print(i)
         return root_node

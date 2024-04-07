@@ -2,6 +2,9 @@ import tython_compiler as tc
 import time
 
 IOTA = 1
+class TestCaseError(Exception):
+    '''Yet another error!'''
+    ...
 
 def test_case(func):
     '''Define some simple helpers for test_cases'''
@@ -20,9 +23,10 @@ def test_case(func):
 def test_case_1():
     program = '''
     PROGRAM "test 1"
+    Implicit real32 x
     x = (1 + 2) + 3 * 4
     y = (4)
-    if 1 > 2
+    if (1 + 1) > 2 + 0
     disp "Wat :|"
     '''
     tokens = tc.Parser.lexical_analysis(program)
