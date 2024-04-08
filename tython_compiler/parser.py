@@ -393,6 +393,11 @@ class Parser(object):
             # ARRAY_VAR = '@[A-Z]\\d?'
             # # COMMANDS
             # DISP = 'DISP'
+            elif curr.type == TOKEN_TYPE.DISP:
+                if next.type != TOKEN_TYPE.VAR or next.type not in REQUIRES_VALUE:
+                    raise SyntaxError(f"Display command expects variable or literal after, got {next} instead")
+                root_node.append(Node(curr, [Node(next)]))
+                i += 2
             # DISP_STR = 'DISPSTR'
             # # TRIG FUNCTIONS
             # SIN = 'SIN'
