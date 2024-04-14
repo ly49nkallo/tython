@@ -149,27 +149,7 @@ class Parser(object):
     @classmethod
     def syntax_analysis(cls, tokens:list):
         '''Take list of tokens and create a (potentially illegal) AST'''
-        
-        def handle_expr(tokens:list) -> Node:
-            '''Handles the creation of mathematical EXPR nodes'''
-            '''
-            MUL -> (NUM|EXPR) * (NUM|EXPR)
-            ADD -> (NUM|EXPR) + (NUM|EXPR)
-            EXPR -> \( .* )
-            NUM -> (0-9)+
-            '''
-            # Steps
-            # 1. Recursively evaluate parentheses
-            # 2. In reverse order of operation precedence, find all operations and combine left to right,
-            #    calling this function recursively to generate the node below
-            # Only this function can create EXPR nodes
-            
-            # quick return for lone number
-            if len(tokens) == 1:
-                if tokens[0].type in NUMERALS:
-                    return Node(tokens[0])
-
-            root_node = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number))
+        def handle_parenthesis(tokens:list) -> list:
             nodes = [Node(token) for token in tokens]
             new_nodes = []
             scan = []
@@ -196,6 +176,29 @@ class Parser(object):
                 raise SyntaxError("Not all parentheses closed")
             nodes = new_nodes
             new_nodes = nodes.copy()
+            return new_nodes
+        
+        def handle_expr(tokens:list) -> Node:
+            '''Handles the creation of mathematical EXPR nodes'''
+            '''
+            MUL -> (NUM|EXPR) * (NUM|EXPR)
+            ADD -> (NUM|EXPR) + (NUM|EXPR)
+            EXPR -> \( .* )
+            NUM -> (0-9)+
+            '''
+            # Steps
+            # 1. Recursively evaluate parentheses
+            # 2. In reverse order of operation precedence, find all operations and combine left to right,
+            #    calling this function recursively to generate the node below
+            # Only this function can create EXPR nodes
+            
+            # quick return for lone number
+            if len(tokens) == 1:
+                if tokens[0].type in NUMERALS:
+                    return Node(tokens[0])
+
+            root_node = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number))
+            new_nodes = handle_parenthesis(tokens)
             # Smushes together operation nodes in order of operations
             for op_level in reversed(ORDER_OF_OPERATIONS):
                 for op in op_level:
@@ -261,7 +264,9 @@ class Parser(object):
             (BOOL_EXPR | LOGIC_EXPR) ("AND", "OR", "NOT", "NOR", "XOR", "NAND") (BOOL_EXPR | LOGIC_EXPR)
             and returns a node LOGIC_EXPR or a BOOL_EXPR (depending on conciceness)
             '''
+            
             root_node = Node(Token(TOKEN_TYPE.LOGIC_EXPR, line_number=tokens[0].line_number))
+            raise NotImplementedError("Logical expressions not yet supported sry")
             return root_node
 
         if tokens[0].type is not TOKEN_TYPE.PROGRAM or tokens[1].type is not TOKEN_TYPE.STR_LIT:
@@ -394,7 +399,7 @@ class Parser(object):
             # # COMMANDS
             # DISP = 'DISP'
             elif curr.type == TOKEN_TYPE.DISP:
-                if next.type != TOKEN_TYPE.VAR or next.type not in REQUIRES_VALUE:
+                if next.type != TOKEN_TYPE.VAR and next.type not in REQUIRES_VALUE:
                     raise SyntaxError(f"Display command expects variable or literal after, got {next} instead")
                 root_node.append(Node(curr, [Node(next)]))
                 i += 2
