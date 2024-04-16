@@ -28,6 +28,10 @@ def test_case_1():
     y = (4)
     if (1 + 1) > 2 + 0
     disp "Wat :|"
+    if (1 + 1 > 4) or (1 + 1 > 0) then
+    disp "Ok then..."
+    end
+    #EOF
     '''
     tokens = tc.Parser.lexical_analysis(program)
     tree = tc.Parser.syntax_analysis(tokens)
