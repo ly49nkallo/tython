@@ -149,7 +149,14 @@ class Parser(object):
     @classmethod
     def syntax_analysis(cls, tokens:list):
         '''Take list of tokens and create a (potentially illegal) AST'''
-        def handle_parenthesis(tokens:list) -> list:
+        def handle_parenthesis(tokens:list, mode:str) -> list:
+            '''
+            Args:
+                tokens (list) : the stream of tokens that will be searched for parenthesis
+                mode (str) : a string specifying how the function will handle parentheses
+                    "EXPR" : Compile as mathematical expression
+                    "LOGIC" : Compile as logical expression
+            '''
             nodes = [Node(token) for token in tokens]
             new_nodes = []
             scan = []
@@ -167,7 +174,10 @@ class Parser(object):
                     if node.token.type != TOKEN_TYPE.R_PAREN:
                         new_nodes.append(node)
                     if len(scan) > 0:
-                        new_node = handle_expr([s.token for s in scan][1:-1])
+                        if mode == "EXPR":
+                            new_node = handle_expr([s.token for s in scan][1:-1])
+                        elif mode == "LOGIC":
+                            new_node = handle_logical_expr([s.token for s in scan][1:-1])
                         scan = []
                         new_nodes.append(new_node)
                 elif depth > 0:
@@ -198,7 +208,7 @@ class Parser(object):
                     return Node(tokens[0])
 
             root_node = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number))
-            new_nodes = handle_parenthesis(tokens)
+            new_nodes = handle_parenthesis(tokens, mode="EXPR")
             # Smushes together operation nodes in order of operations
             for op_level in reversed(ORDER_OF_OPERATIONS):
                 for op in op_level:
@@ -251,11 +261,7 @@ class Parser(object):
             lhs = handle_expr(tokens[:op_idx])
             rhs = handle_expr(tokens[op_idx+1:])
             op = tokens[op_idx]
-            print(lhs)
-            print(rhs)
-            root_node.children = [Node(op, [lhs, rhs])]
-            print(root_node)
-            # root_node.append(rhs)
+            root_node.children = [Node(op, [lhs, rhs])] #@TODO: Why is node.append a bug?? Circular reference?
             return root_node
         
         def handle_logical_expr(tokens:list) -> Node:
@@ -264,7 +270,10 @@ class Parser(object):
             (BOOL_EXPR | LOGIC_EXPR) ("AND", "OR", "NOT", "NOR", "XOR", "NAND") (BOOL_EXPR | LOGIC_EXPR)
             and returns a node LOGIC_EXPR or a BOOL_EXPR (depending on conciceness)
             '''
-            
+            # fast return for statements with no logical tokens
+            if not any([token.type in LOGICAL_OPERATORS for token in tokens]):
+                return handle_bool_expr(tokens)
+
             root_node = Node(Token(TOKEN_TYPE.LOGIC_EXPR, line_number=tokens[0].line_number))
             raise NotImplementedError("Logical expressions not yet supported sry")
             return root_node
@@ -342,8 +351,8 @@ class Parser(object):
                 while tokens[j].type not in {TOKEN_TYPE.LINE_BREAK, TOKEN_TYPE.EOF, TOKEN_TYPE.THEN} and j < len(tokens):
                     scan.append(tokens[j])
                     j += 1
-                bool_expr_node = handle_bool_expr(scan)
-                root_node.append(Node(curr, [bool_expr_node]))
+                expr_node = handle_logical_expr(scan)
+                root_node.append(Node(curr, [expr_node]))
                 i = j+1
             # THEN = 'THEN'
             # ELSE = 'ELSE'
