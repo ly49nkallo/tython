@@ -149,6 +149,7 @@ class Parser(object):
     @classmethod
     def syntax_analysis(cls, tokens:list):
         '''Take list of tokens and create a (potentially illegal) AST'''
+
         def handle_parenthesis(tokens:list, mode:str) -> list:
             '''
             Args:
@@ -157,6 +158,7 @@ class Parser(object):
                     "EXPR" : Compile as mathematical expression
                     "LOGIC" : Compile as logical expression
             '''
+
             nodes = [Node(token) for token in tokens]
             new_nodes = []
             scan = []
@@ -178,16 +180,17 @@ class Parser(object):
                             new_node = handle_expr([s.token for s in scan][1:-1])
                         elif mode == "LOGIC":
                             new_node = handle_logical_expr([s.token for s in scan][1:-1])
+                        else:
+                            raise NameError(f'mode {mode} not supported')
                         scan = []
                         new_nodes.append(new_node)
                 elif depth > 0:
                         scan.append(node)
+
             if depth != 0:
                 raise SyntaxError("Not all parentheses closed")
-            nodes = new_nodes
-            new_nodes = nodes.copy()
             return new_nodes
-        
+
         def handle_expr(tokens:list) -> Node:
             '''Handles the creation of mathematical EXPR nodes'''
             '''
@@ -201,7 +204,7 @@ class Parser(object):
             # 2. In reverse order of operation precedence, find all operations and combine left to right,
             #    calling this function recursively to generate the node below
             # Only this function can create EXPR nodes
-            
+
             # quick return for lone number
             if len(tokens) == 1:
                 if tokens[0].type in NUMERALS:
@@ -275,7 +278,21 @@ class Parser(object):
                 return handle_bool_expr(tokens)
 
             root_node = Node(Token(TOKEN_TYPE.LOGIC_EXPR, line_number=tokens[0].line_number))
-            raise NotImplementedError("Logical expressions not yet supported sry")
+            new_nodes = handle_parenthesis(tokens, "LOGIC")
+
+            c = 0
+            for idx, node in enumerate(new_nodes):
+                if node.token.type in LOGICAL_OPERATORS:
+                    c += 1
+                    op_idx = idx
+            if c == 0:
+                raise SyntaxError(f"Logical Expr expects at least one logical operator, got tokens {tokens}")
+            if c > 1:
+                raise SyntaxError(f"Logical Expr expects at most one logical operator, got tokens {tokens}")
+            #CODE
+            new_node = new_nodes[op_idx]
+            root_node.children = [new_node]
+
             return root_node
 
         if tokens[0].type is not TOKEN_TYPE.PROGRAM or tokens[1].type is not TOKEN_TYPE.STR_LIT:
