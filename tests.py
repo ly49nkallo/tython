@@ -28,8 +28,10 @@ def test_case_1():
     y = (4)
     if (1 + 1) > 2 + 0
     disp "Wat :|"
-    if (1 + 1 > 4) or (1 + 1 > 0) then
+    if ((1 + 1 > 4) or (1 + 1 > 0)) or (1 == 1) then
     disp "Ok then..."
+    disp "2"
+    disp "3"
     end
     #EOF
     '''

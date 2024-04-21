@@ -76,6 +76,7 @@ class TOKEN_TYPE(enum.Enum):
         PROG = 4
         BOOL_EXPR = 5
         LOGIC_EXPR = 6
+        BLOCK = 7
         
         # STMT = 6
 

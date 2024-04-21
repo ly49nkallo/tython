@@ -147,153 +147,156 @@ class Parser(object):
         return token
 
     @classmethod
+    def handle_parenthesis(cls, tokens:list, mode:str) -> list:
+        '''
+        Args:
+            tokens (list) : the stream of tokens that will be searched for parenthesis
+            mode (str) : a string specifying how the function will handle parentheses
+                "EXPR" : Compile as mathematical expression
+                "LOGIC" : Compile as logical expression
+        '''
+
+        nodes = [Node(token) for token in tokens]
+        new_nodes = []
+        scan = []
+        depth = 0
+        for node in nodes:
+            if node.token.type == TOKEN_TYPE.L_PAREN:
+                depth += 1
+            elif node.token.type == TOKEN_TYPE.R_PAREN:
+                depth -= 1
+                if depth < 0:
+                    raise SyntaxError("Too many right parentheses")
+                if depth == 0:
+                    scan.append(node)
+            if depth == 0:
+                if node.token.type != TOKEN_TYPE.R_PAREN:
+                    new_nodes.append(node)
+                if len(scan) > 0:
+                    if mode == "EXPR":
+                        new_node = cls.handle_expr([s.token for s in scan][1:-1])
+                    elif mode == "LOGIC":
+                        new_node = cls.handle_logical_expr([s.token for s in scan][1:-1])
+                    else:
+                        raise NameError(f'mode {mode} not supported')
+                    scan = []
+                    new_nodes.append(new_node)
+            elif depth > 0:
+                    scan.append(node)
+
+        if depth != 0:
+            raise SyntaxError("Not all parentheses closed")
+        return new_nodes
+
+    @classmethod
+    def handle_expr(cls, tokens:list) -> Node:
+        '''Handles the creation of mathematical EXPR nodes'''
+        '''
+        MUL -> (NUM|EXPR) * (NUM|EXPR)
+        ADD -> (NUM|EXPR) + (NUM|EXPR)
+        EXPR -> \( .* )
+        NUM -> (0-9)+
+        '''
+        # Steps
+        # 1. Recursively evaluate parentheses
+        # 2. In reverse order of operation precedence, find all operations and combine left to right,
+        #    calling this function recursively to generate the node below
+        # Only this function can create EXPR nodes
+
+        # quick return for lone number
+        if len(tokens) == 1:
+            if tokens[0].type in NUMERALS:
+                return Node(tokens[0])
+
+        root_node = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number))
+        new_nodes = cls.handle_parenthesis(tokens, mode="EXPR")
+        # Smushes together operation nodes in order of operations
+        for op_level in reversed(ORDER_OF_OPERATIONS):
+            for op in op_level:
+                i = 0
+                while i < len(new_nodes):
+                    node:Node = new_nodes[i]
+                    if node.token.type == op and node.is_leaf():
+                        try: #nodes doesnt contain the correct information
+                            lhs:Node = new_nodes[i-1]
+                            rhs:Node = new_nodes[i+1]
+                            assert i-1 >= 0
+                        except:
+                            raise SyntaxError("Structure of expression invalid")
+                        if not (lhs.token.type in NUMERALS or lhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
+                            raise SyntaxError(f"Structure of expression invalid, got {lhs.token.type} instead")
+                        if not (rhs.token.type in NUMERALS or rhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
+                            raise SyntaxError(f"Structure of expression invalid, got {rhs.token.type} instead")
+                        new_node = node
+                        new_node.children = [lhs, rhs]
+                        new_nodes = new_nodes[0:i-1] + new_nodes[i+2:]
+                        new_nodes.insert(i-1, new_node)
+                        i -= 3
+                    i += 1
+        # make sure there arnt any orphaned numbers left
+        if len(new_nodes) != 1:
+            for node in new_nodes:
+                if node.token.type in NUMERALS:
+                    raise SyntaxError(f"Orphaned numeral token {node}")
+        root_node.children = new_nodes
+        return root_node
+
+    @classmethod
+    def handle_bool_expr(cls, tokens:list) -> Node:
+        '''
+        Handles a boolean expr (BOOL_EXPR) Nodes of the form
+        EXPR ("<", "<=", ">", ">=", "!=", "==") EXPR
+        and returns a node BOOL_EXPR
+        '''
+        root_node = Node(Token(TOKEN_TYPE.BOOL_EXPR, line_number=tokens[0].line_number))
+        # ensure there is exactly one boolean operator in the token stream
+        c = 0
+        for idx, token in enumerate(tokens):
+            if token.type in BOOLEAN_OPERATORS:
+                c += 1
+                op_idx = idx
+        if c == 0:
+            raise SyntaxError(f"Bool expr expects at least one boolean operator. Got tokens {tokens}.")
+        elif c > 1:
+            raise SyntaxError(f"Expected at most one boolean operator. Got tokens {tokens}.")
+        del c
+        lhs = cls.handle_expr(tokens[:op_idx])
+        rhs = cls.handle_expr(tokens[op_idx+1:])
+        op = tokens[op_idx]
+        root_node.children = [Node(op, [lhs, rhs])] #@TODO: Why is node.append a bug?? Circular reference?
+        return root_node
+
+    @classmethod 
+    def handle_logical_expr(cls, tokens:list) -> Node:
+        '''
+        Handles a logical expr (LOGIC_EXPR) Nodes of the form
+        (BOOL_EXPR | LOGIC_EXPR) ("AND", "OR", "NOT", "NOR", "XOR", "NAND") (BOOL_EXPR | LOGIC_EXPR)
+        and returns a node LOGIC_EXPR or a BOOL_EXPR (depending on conciceness)
+        '''
+        # fast return for statements with no logical tokens
+        if not any([token.type in LOGICAL_OPERATORS for token in tokens]):
+            return cls.handle_bool_expr(tokens)
+
+        root_node = Node(Token(TOKEN_TYPE.LOGIC_EXPR, line_number=tokens[0].line_number))
+        new_nodes = cls.handle_parenthesis(tokens, "LOGIC")
+        c = 0
+        for idx, node in enumerate(new_nodes):
+            if node.token.type in LOGICAL_OPERATORS:
+                c += 1
+                op_idx = idx
+        if c == 0:
+            raise SyntaxError(f"Logical Expr expects at least one logical operator, got tokens {tokens}")
+        if c > 1:
+            raise SyntaxError(f"Logical Expr expects at most one logical operator, got tokens {tokens}")
+        #CODE
+        new_node:Node = new_nodes[op_idx]
+        new_node.children = new_nodes[:op_idx] + new_nodes[op_idx+1:]
+        root_node.children = [new_node]
+        return root_node
+
+    @classmethod
     def syntax_analysis(cls, tokens:list):
         '''Take list of tokens and create a (potentially illegal) AST'''
-
-        def handle_parenthesis(tokens:list, mode:str) -> list:
-            '''
-            Args:
-                tokens (list) : the stream of tokens that will be searched for parenthesis
-                mode (str) : a string specifying how the function will handle parentheses
-                    "EXPR" : Compile as mathematical expression
-                    "LOGIC" : Compile as logical expression
-            '''
-
-            nodes = [Node(token) for token in tokens]
-            new_nodes = []
-            scan = []
-            depth = 0
-            for node in nodes:
-                if node.token.type == TOKEN_TYPE.L_PAREN:
-                    depth += 1
-                elif node.token.type == TOKEN_TYPE.R_PAREN:
-                    depth -= 1
-                    if depth < 0:
-                        raise SyntaxError("Too many right parentheses")
-                    if depth == 0:
-                        scan.append(node)
-                if depth == 0:
-                    if node.token.type != TOKEN_TYPE.R_PAREN:
-                        new_nodes.append(node)
-                    if len(scan) > 0:
-                        if mode == "EXPR":
-                            new_node = handle_expr([s.token for s in scan][1:-1])
-                        elif mode == "LOGIC":
-                            new_node = handle_logical_expr([s.token for s in scan][1:-1])
-                        else:
-                            raise NameError(f'mode {mode} not supported')
-                        scan = []
-                        new_nodes.append(new_node)
-                elif depth > 0:
-                        scan.append(node)
-
-            if depth != 0:
-                raise SyntaxError("Not all parentheses closed")
-            return new_nodes
-
-        def handle_expr(tokens:list) -> Node:
-            '''Handles the creation of mathematical EXPR nodes'''
-            '''
-            MUL -> (NUM|EXPR) * (NUM|EXPR)
-            ADD -> (NUM|EXPR) + (NUM|EXPR)
-            EXPR -> \( .* )
-            NUM -> (0-9)+
-            '''
-            # Steps
-            # 1. Recursively evaluate parentheses
-            # 2. In reverse order of operation precedence, find all operations and combine left to right,
-            #    calling this function recursively to generate the node below
-            # Only this function can create EXPR nodes
-
-            # quick return for lone number
-            if len(tokens) == 1:
-                if tokens[0].type in NUMERALS:
-                    return Node(tokens[0])
-
-            root_node = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number))
-            new_nodes = handle_parenthesis(tokens, mode="EXPR")
-            # Smushes together operation nodes in order of operations
-            for op_level in reversed(ORDER_OF_OPERATIONS):
-                for op in op_level:
-                    i = 0
-                    while i < len(new_nodes):
-                        node:Node = new_nodes[i]
-                        if node.token.type == op and node.is_leaf():
-                            try: # @BUG nodes doesnt contain the correct information
-                                lhs:Node = new_nodes[i-1]
-                                rhs:Node = new_nodes[i+1]
-                                assert i-1 >= 0
-                            except:
-                                raise SyntaxError("Structure of expression invalid")
-                            if not (lhs.token.type in NUMERALS or lhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
-                                raise SyntaxError(f"Structure of expression invalid, got {lhs.token.type} instead")
-                            if not (rhs.token.type in NUMERALS or rhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
-                                raise SyntaxError(f"Structure of expression invalid, got {rhs.token.type} instead")
-                            new_node = node
-                            new_node.children = [lhs, rhs]
-                            new_nodes = new_nodes[0:i-1] + new_nodes[i+2:]
-                            new_nodes.insert(i-1, new_node)
-                            i -= 3
-                        i += 1
-            # make sure there arnt any orphaned numbers left
-            if len(new_nodes) != 1:
-                for node in new_nodes:
-                    if node.token.type in NUMERALS:
-                        raise SyntaxError(f"Orphaned numeral token {node}")
-            root_node.children = new_nodes
-            return root_node
-
-        def handle_bool_expr(tokens:list) -> Node:
-            '''
-            Handles a boolean expr (BOOL_EXPR) Nodes of the form
-            EXPR ("<", "<=", ">", ">=", "!=", "==") EXPR
-            and returns a node BOOL_EXPR
-            '''
-            root_node = Node(Token(TOKEN_TYPE.BOOL_EXPR, line_number=tokens[0].line_number))
-            # ensure there is exactly one boolean operator in the token stream
-            c = 0
-            for idx, token in enumerate(tokens):
-                if token.type in BOOLEAN_OPERATORS:
-                    c += 1
-                    op_idx = idx
-            if c == 0:
-                raise SyntaxError(f"Bool expr expects at least one boolean operator. Got tokens {tokens}.")
-            elif c > 1:
-                raise SyntaxError(f"Expected at most one boolean operator. Got tokens {tokens}.")
-            del c
-            lhs = handle_expr(tokens[:op_idx])
-            rhs = handle_expr(tokens[op_idx+1:])
-            op = tokens[op_idx]
-            root_node.children = [Node(op, [lhs, rhs])] #@TODO: Why is node.append a bug?? Circular reference?
-            return root_node
-        
-        def handle_logical_expr(tokens:list) -> Node:
-            '''
-            Handles a logical expr (LOGIC_EXPR) Nodes of the form
-            (BOOL_EXPR | LOGIC_EXPR) ("AND", "OR", "NOT", "NOR", "XOR", "NAND") (BOOL_EXPR | LOGIC_EXPR)
-            and returns a node LOGIC_EXPR or a BOOL_EXPR (depending on conciceness)
-            '''
-            # fast return for statements with no logical tokens
-            if not any([token.type in LOGICAL_OPERATORS for token in tokens]):
-                return handle_bool_expr(tokens)
-
-            root_node = Node(Token(TOKEN_TYPE.LOGIC_EXPR, line_number=tokens[0].line_number))
-            new_nodes = handle_parenthesis(tokens, "LOGIC")
-
-            c = 0
-            for idx, node in enumerate(new_nodes):
-                if node.token.type in LOGICAL_OPERATORS:
-                    c += 1
-                    op_idx = idx
-            if c == 0:
-                raise SyntaxError(f"Logical Expr expects at least one logical operator, got tokens {tokens}")
-            if c > 1:
-                raise SyntaxError(f"Logical Expr expects at most one logical operator, got tokens {tokens}")
-            #CODE
-            new_node = new_nodes[op_idx]
-            root_node.children = [new_node]
-
-            return root_node
 
         if tokens[0].type is not TOKEN_TYPE.PROGRAM or tokens[1].type is not TOKEN_TYPE.STR_LIT:
             raise SyntaxError(f"Program must begin with a program name, got {tokens[0]} and {tokens[1]} instead")
@@ -347,7 +350,7 @@ class Parser(object):
                     while tokens[j].type != TOKEN_TYPE.LINE_BREAK and tokens[j].type != TOKEN_TYPE.EOF and j < len(tokens):
                         scan.append(tokens[j])
                         j += 1
-                    expr_node = handle_expr(scan)
+                    expr_node = cls.handle_expr(scan)
                     root_node.append(Node(curr, [Node(prev), expr_node]))
                     i = j+1
                 else:
@@ -368,7 +371,7 @@ class Parser(object):
                 while tokens[j].type not in {TOKEN_TYPE.LINE_BREAK, TOKEN_TYPE.EOF, TOKEN_TYPE.THEN} and j < len(tokens):
                     scan.append(tokens[j])
                     j += 1
-                expr_node = handle_logical_expr(scan)
+                expr_node = cls.handle_logical_expr(scan)
                 root_node.append(Node(curr, [expr_node]))
                 i = j+1
             # THEN = 'THEN'
@@ -452,6 +455,7 @@ class Parser(object):
             # PROG = 4
             # BIN_EXPR = 5
             # STMT = 6
+            # BLOCK = 7
             else:
                 if DEBUG: print(f'failed to parse token {curr}.')
                 i += 1
