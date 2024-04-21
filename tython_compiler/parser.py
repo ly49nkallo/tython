@@ -302,6 +302,13 @@ class Parser(object):
             raise SyntaxError(f"Program must begin with a program name, got {tokens[0]} and {tokens[1]} instead")
 
         root_node = Node(Token(TOKEN_TYPE.PROG, 0), [])
+        cls.analyze_block(tokens, root_node)
+        return root_node
+
+
+    @classmethod
+    def analyze_block(cls, tokens:list, root_node:Node):
+        '''Perform the iterative analysis of the list of tokens, returning a single root node specified by the parameter'''
         i = 0
         while i < len(tokens):
             prev_prev:Token = tokens[i-2] if i-2>=0 else None
@@ -372,8 +379,33 @@ class Parser(object):
                     scan.append(tokens[j])
                     j += 1
                 expr_node = cls.handle_logical_expr(scan)
-                root_node.append(Node(curr, [expr_node]))
+                # detect if in 'if then ... end clause'
+                if tokens[j] == TOKEN_TYPE.THEN:
+                    block_node = Node(Token(TOKEN_TYPE.BLOCK, -1))
+                    scan = []
+                    while tokens[j].type != TOKEN_TYPE.END:
+                        if tokens[j].type == TOKEN_TYPE.EOF:
+                            raise SyntaxError("IF-THEN clause not closed with END token")
+                        scan.append(tokens[j])
+                        j += 1
+                    cls.analyze_block(scan, block_node)
+                else:
+                    block_node = Node(Token(TOKEN_TYPE.BLOCK, -1))
+                    scan = []
+                    if tokens[j].type != TOKEN_TYPE.LINE_BREAK: #BUG
+                        raise SyntaxError("IF statement must close with LINE_BREAK or THEN")
+                    j += 1
+                    while tokens[j].type not in {TOKEN_TYPE.EOF, TOKEN_TYPE.LINE_BREAK}:
+                        scan.append(tokens[j])
+                        j += 1
+                    cls.analyze_block(scan, block_node)
+                if len(block_node.children) == 0:
+                    raise SyntaxError("IF statement must be followed by code")
+                root_node.append(Node(curr, [expr_node, block_node]))
+
+                    
                 i = j+1
+
             # THEN = 'THEN'
             # ELSE = 'ELSE'
             # END = 'END'
