@@ -26,13 +26,13 @@ def test_case_1():
     Implicit real32 x
     x = (1 + 2) + 3 * 4
     y = (4)
-    if (1 + 1) > 2 + 0
-    disp "Wat :|"
-    if ((1 + 1 > 4) or (1 + 1 > 0)) or (1 == 1) then
+    if (5 + 6) > 7
+    # disp "Wat :|"
+    # if ((8 + 9 > 10) or (11 + 12 > 13)) or (14 == 15) then
     disp "Ok then..."
     disp "2"
     disp "3"
-    end
+    #end
     #EOF
     '''
     tokens = tc.Parser.lexical_analysis(program)
@@ -41,6 +41,12 @@ def test_case_1():
 
 @test_case
 def test_case_2():
+    print(tc.Parser.handle_expr([
+        tc.Token(tc.TOKEN_TYPE.INT_LIT, 0, 1),
+        tc.Token(tc.TOKEN_TYPE.PLUS, 0),
+        tc.Token(tc.TOKEN_TYPE.INT_LIT, 0, 2)
+        ]
+        ))
     pass
 
 if __name__ == '__main__':

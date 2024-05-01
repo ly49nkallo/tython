@@ -11,37 +11,10 @@ import re
 from pprint import pprint
 from .token_types import *
 from .token import Token
+from .node import Node
 
 COMMENT_DELIM = '#'
 DEBUG = False
-
-class Node(object):
-    def __init__(self, token:Token, children:list=[], /, name:str=None):
-        self.name:typing.Optional[str] = name
-        self.token:Token = token
-        self.children:list = children
-
-    def is_leaf(self) -> bool:
-        return (len(self.children) == 0)
-
-    def append(self, other:'Node'):
-        assert isinstance(other, Node), f"Expected Node, got {type(other)} instead"
-        self.children.append(other)
-
-    def _repr_helper(self, tabs:int):
-        if self.name is not None: ret = self.name
-        else: ret = repr(self.token)[len("TOKEN_TYPE")+1:]
-        if len(self.children) != 0: ret += '\n'
-        for c in self.children:
-            assert isinstance(c, Node), str(type(c))
-            ret += ' ' * (4*tabs) + c._repr_helper(tabs+1) + '\n'
-        if len(self.children) != 0: 
-            ret = ret[:-1]
-            #ret += ' ' * (4*tabs) # neater this way
-        return ret
-
-    def __repr__(self):
-        return self._repr_helper(1)
 
 class Parser(object):
     '''Parse code into AST'''
@@ -99,7 +72,8 @@ class Parser(object):
             if curr_char == '\n':
                 if buffer[:-1] != '' and not in_comment:
                     tokens.append(cls.analyze_buffer(buffer[:-1], current_line_number))
-                tokens.append(Token(TOKEN_TYPE.LINE_BREAK, current_line_number))
+                if not in_comment:
+                    tokens.append(Token(TOKEN_TYPE.LINE_BREAK, current_line_number))
                 buffer = ''
                 in_str_lit = False
                 in_comment = False
@@ -237,7 +211,7 @@ class Parser(object):
         if len(new_nodes) != 1:
             for node in new_nodes:
                 if node.token.type in NUMERALS:
-                    raise SyntaxError(f"Orphaned numeral token {node}")
+                    raise SyntaxError(f"Orphaned numeral token {node.token} from nodes while processing {tokens}")
         root_node.children = new_nodes
         return root_node
 
@@ -259,11 +233,10 @@ class Parser(object):
             raise SyntaxError(f"Bool expr expects at least one boolean operator. Got tokens {tokens}.")
         elif c > 1:
             raise SyntaxError(f"Expected at most one boolean operator. Got tokens {tokens}.")
-        del c
         lhs = cls.handle_expr(tokens[:op_idx])
         rhs = cls.handle_expr(tokens[op_idx+1:])
         op = tokens[op_idx]
-        root_node.children = [Node(op, [lhs, rhs])] #@TODO: Why is node.append a bug?? Circular reference?
+        root_node.append_child(Node(op, [lhs, rhs])) #@TODO: Why is node.append a bug?? Circular reference?
         return root_node
 
     @classmethod 
@@ -322,31 +295,31 @@ class Parser(object):
             elif curr.type == TOKEN_TYPE.INT32:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token INT32 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after INT32, got {next} instead")
-                root_node.append(Node(curr, [Node(next, [])]))
+                root_node.append_child(Node(curr, [Node(next, [])]))
                 i += 2
             # INT64 = 'INT64'
             elif curr.type == TOKEN_TYPE.INT64:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token INT64 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after INT64, got {next} instead")
-                root_node.append(Node(curr, [Node(next, [])]))
+                root_node.append_child(Node(curr, [Node(next, [])]))
                 i += 2
             # REAL32 = 'REAL32'
             elif curr.type == TOKEN_TYPE.REAL32:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token REAL32 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after REAL32, got {next} instead")
-                root_node.append(Node(curr, [Node(next, [])]))
+                root_node.append_child(Node(curr, [Node(next, [])]))
                 i += 2
             # REAL64 = 'REAL64'
             elif curr.type == TOKEN_TYPE.REAL64:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token REAL64 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after REAL32, got {next} instead")
-                root_node.append(Node(curr, [Node(next, [])]))
+                root_node.append_child(Node(curr, [Node(next, [])]))
                 i += 2
             # CHAR8 = 'CHAR8'
             elif curr.type == TOKEN_TYPE.CHAR8:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token CHAR8 must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after CHAR8, got {next} instead")
-                root_node.append(Node(curr, [Node(next, [])]))
+                root_node.append_child(Node(curr, [Node(next, [])]))
                 i += 2
             # # MATHEMATICAL OPERATORS
             # ASSIGN = '\='
@@ -358,7 +331,7 @@ class Parser(object):
                         scan.append(tokens[j])
                         j += 1
                     expr_node = cls.handle_expr(scan)
-                    root_node.append(Node(curr, [Node(prev), expr_node]))
+                    root_node.append_child(Node(curr, [Node(prev), expr_node]))
                     i = j+1
                 else:
                     raise SyntaxError("Expected expression after variable instance")
@@ -388,6 +361,7 @@ class Parser(object):
                             raise SyntaxError("IF-THEN clause not closed with END token")
                         scan.append(tokens[j])
                         j += 1
+                    print(f"{scan=}")
                     cls.analyze_block(scan, block_node)
                 else:
                     block_node = Node(Token(TOKEN_TYPE.BLOCK, -1))
@@ -398,10 +372,11 @@ class Parser(object):
                     while tokens[j].type not in {TOKEN_TYPE.EOF, TOKEN_TYPE.LINE_BREAK}:
                         scan.append(tokens[j])
                         j += 1
+                    print(f"{scan=}")
                     cls.analyze_block(scan, block_node)
                 if len(block_node.children) == 0:
                     raise SyntaxError("IF statement must be followed by code")
-                root_node.append(Node(curr, [expr_node, block_node]))
+                root_node.append_child(Node(curr, [expr_node, block_node]))
 
                     
                 i = j+1
@@ -414,13 +389,13 @@ class Parser(object):
             elif curr.type == TOKEN_TYPE.LABEL:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token LABEL must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after LABEL, got {next} instead")
-                root_node.append(Node(curr, [Node(next, [])]))
+                root_node.append_child(Node(curr, [Node(next, [])]))
                 i += 2
             # GOTO = 'GOTO'
             elif curr.type == TOKEN_TYPE.GOTO:
                 if prev.type != TOKEN_TYPE.LINE_BREAK: raise SyntaxError(f"Token GOTO must be first token in line")
                 if next.type != TOKEN_TYPE.VAR: raise SyntaxError(f"Expected VAR after GOTO, got {next} instead")
-                root_node.append(Node(curr, [Node(next, [])]))
+                root_node.append_child(Node(curr, [Node(next, [])]))
                 i += 2
             # # PROGRAM CONTROL
             # PROGRAM = 'PROGRAM'
@@ -428,13 +403,13 @@ class Parser(object):
                 if i != 0: raise SyntaxError("PROGRAM token must be first in program")
                 if next.type != TOKEN_TYPE.STR_LIT:
                     raise SyntaxError(f"Expected STR_LIT, got {next.type}")
-                root_node.append(Node(curr, [Node(next, [])]))
+                root_node.append_child(Node(curr, [Node(next, [])]))
                 i += 2 # digest next token
             # VERSION = 'VERSION'
             elif curr.type == TOKEN_TYPE.VERSION:
                 if not all([tokens[j].type == TOKEN_TYPE.INT_LIT for j in range(i+1, i+4)]):
                     raise SyntaxError(f"Expected INT_LIT after VERSION token, got {[tokens[j].type for j in range(i+1, i+4)]}")
-                root_node.append(Node(curr, [Node(tokens[j], []) for j in range(i+1, i+4)]))
+                root_node.append_child(Node(curr, [Node(tokens[j], []) for j in range(i+1, i+4)]))
                 i += 4
             # IMPLICIT = 'IMPLICIT'
             elif curr.type == TOKEN_TYPE.IMPLICIT:
@@ -442,7 +417,7 @@ class Parser(object):
                     raise SyntaxError(f"Expected DATA_TYPE after IMPLICIT, got {next.type} instead")
                 if next_next.type != TOKEN_TYPE.VAR:
                     raise SyntaxError(f"Expected VAR in IMPLICIT statement, got {next_next.type} instead")
-                root_node.append(Node(curr, [Node(next), Node(next_next)]))
+                root_node.append_child(Node(curr, [Node(next), Node(next_next)]))
                 i += 3
             # CALL = 'CALL'
             elif curr.type == TOKEN_TYPE.CALL:
@@ -462,7 +437,7 @@ class Parser(object):
             elif curr.type == TOKEN_TYPE.DISP:
                 if next.type != TOKEN_TYPE.VAR and next.type not in REQUIRES_VALUE:
                     raise SyntaxError(f"Display command expects variable or literal after, got {next} instead")
-                root_node.append(Node(curr, [Node(next)]))
+                root_node.append_child(Node(curr, [Node(next, [])])) #BUG Causes a circular reference curr->next->curr->next &c.
                 i += 2
             # DISP_STR = 'DISPSTR'
             # # TRIG FUNCTIONS
