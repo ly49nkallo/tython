@@ -23,6 +23,19 @@ def test_case(func):
 def test_case_1():
     program = '''
     PROGRAM "test 1"
+    if 1 == 1
+    Disp "Hi"
+    '''
+    tokens = tc.Parser.lexical_analysis(program)
+    tree = tc.Parser.syntax_analysis(tokens)
+    print(tree)
+
+    pass
+
+@test_case
+def test_case_2():
+    program = '''
+    PROGRAM "test 1"
     Implicit real32 x
     x = (1 + 2) + 3 * 4
     y = (4)
@@ -40,7 +53,7 @@ def test_case_1():
     print(tree)
 
 @test_case
-def test_case_2():
+def test_case_3():
     print(tc.Parser.handle_expr([
         tc.Token(tc.TOKEN_TYPE.INT_LIT, 0, 1),
         tc.Token(tc.TOKEN_TYPE.PLUS, 0),
@@ -49,9 +62,11 @@ def test_case_2():
         ))
     pass
 
+
 if __name__ == '__main__':
     tc.set_debug()
     start_time = time.time()
     test_case_1() 
     test_case_2()
+    test_case_3()
     print(f"All test cases passed in {(time.time() - start_time):0.4f} seconds")

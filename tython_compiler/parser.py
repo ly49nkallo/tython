@@ -361,7 +361,7 @@ class Parser(object):
                             raise SyntaxError("IF-THEN clause not closed with END token")
                         scan.append(tokens[j])
                         j += 1
-                    print(f"{scan=}")
+                    if DEBUG: print(f"{scan=}")
                     cls.analyze_block(scan, block_node)
                 else:
                     block_node = Node(Token(TOKEN_TYPE.BLOCK, -1))
@@ -372,7 +372,7 @@ class Parser(object):
                     while tokens[j].type not in {TOKEN_TYPE.EOF, TOKEN_TYPE.LINE_BREAK}:
                         scan.append(tokens[j])
                         j += 1
-                    print(f"{scan=}")
+                    if DEBUG: print(f"{scan=}")
                     cls.analyze_block(scan, block_node)
                 if len(block_node.children) == 0:
                     raise SyntaxError("IF statement must be followed by code")

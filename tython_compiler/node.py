@@ -16,7 +16,8 @@ TAB_WIDTH = 3
 MAX_RECURSION_DEPTH = 100
 
 class Node(object):
-    def __init__(self, token:Token, children:list=[], /, name:str=None):
+    def __init__(self, token:Token, children:list=None, /, name:str=None):
+        if children is None: children = [] #AAAARRRRGGGGHHHHHHH!!!!!!!! I HATE THIS F*CKING PYTHON FEATURE (BUG) (singleton referenced default kw args)
         self.name:typing.Optional[str] = name
         self.token:Token = token
         self.children:list = children
