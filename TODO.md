@@ -2,5 +2,5 @@
 
 - [x] Logic to handle expressions
 - [x] Boolean operator
-- [ ] Logical operator
-- [ ] Support for if-then-end expressions
+- [x] Logical operator
+- [x] Support for if-then-end expressions

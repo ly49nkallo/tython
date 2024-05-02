@@ -37,8 +37,8 @@ def test_case_2():
     program = '''
     PROGRAM "test 2"
     Implicit real32 x
-    x -> (1 + 2) + 3 * 4
-    y -> (4)
+    (1 + 2) + 3 * 4 -> x
+    (4) -> y
     if (5 + 6) > 7
     disp "Wat :|"
     if ((8 + 9 > 10) or (11 + 12 > 13)) or (14 == 15) then
@@ -57,7 +57,8 @@ def test_case_3():
     '''Test Functions'''
     program = '''
     PROGRAM "test 3"
-    x -> sin(1)
+    sin(1) -> x
+
     #EOF
     '''
     tokens = tc.Parser.lexical_analysis(program)

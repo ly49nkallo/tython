@@ -219,13 +219,12 @@ class Parser(object):
                 next_node:Node = new_nodes[i+1]
                 if next_node.token.type not in NUMERALS and next_node.token.type != TOKEN_TYPE.EXPR:
                     raise CompilationError(f"Expected some input parameter to {node}, but got {next_node} instead")
-
                 new_node:Node = node
                 new_node.children = [next_node]
                 new_nodes = new_nodes[0:i] + new_nodes[i+2:]
                 new_nodes.insert(i, new_node)
             i += 1
-        # make sure there arnt any orphaned numbers left
+        # make sure there aren't any orphaned numbers left
         if len([n for n in new_nodes if n.token.type in NUMERALS]) != 1:
             for node in new_nodes:
                 if node.token.type in NUMERALS:
@@ -340,17 +339,18 @@ class Parser(object):
                 root_node.append_child(Node(curr, [Node(next, [])]))
                 i += 2
             # # MATHEMATICAL OPERATORS
-            # ASSIGN = '\='
+            # ASSIGN = '\-\>'
             elif curr.type == TOKEN_TYPE.VAR:
-                if next.type == TOKEN_TYPE.ASSIGN:
-                    j = i+2
+                if prev.type == TOKEN_TYPE.ASSIGN:
                     scan = []
-                    while tokens[j].type != TOKEN_TYPE.LINE_BREAK and tokens[j].type != TOKEN_TYPE.EOF and j < len(tokens):
+                    j = i
+                    while tokens[j].type != TOKEN_TYPE.LINE_BREAK and j > 0:
                         scan.append(tokens[j])
-                        j += 1
+                        j -= 1
+                    scan = list(reversed(scan))
                     expr_node = cls.handle_expr(scan)
-                    root_node.append_child(Node(curr, [Node(prev), expr_node]))
-                    i = j+1
+                    root_node.append_child(Node(prev, [Node(curr), expr_node]))
+                    i += 1
                 else:
                     raise CompilationError("Expected expression after variable instance")
             # PLUS = '\+':
@@ -374,12 +374,13 @@ class Parser(object):
                 if tokens[j].type == TOKEN_TYPE.THEN:
                     block_node = Node(Token(TOKEN_TYPE.BLOCK, -1))
                     scan = []
+                    j += 1 # pass the 'then' token
                     while tokens[j].type != TOKEN_TYPE.END:
                         if tokens[j].type == TOKEN_TYPE.EOF:
                             raise CompilationError("IF-THEN clause not closed with END token")
                         scan.append(tokens[j])
                         j += 1
-                    if DEBUG: print(f"{scan=}")
+                    if DEBUG: print(f"1{scan=}")
                     cls.analyze_block(scan, block_node)
                 else:
                     block_node = Node(Token(TOKEN_TYPE.BLOCK, -1))
@@ -390,13 +391,11 @@ class Parser(object):
                     while tokens[j].type not in {TOKEN_TYPE.EOF, TOKEN_TYPE.LINE_BREAK}:
                         scan.append(tokens[j])
                         j += 1
-                    if DEBUG: print(f"{scan=}")
+                    if DEBUG: print(f"2{scan=}")
                     cls.analyze_block(scan, block_node)
                 if len(block_node.children) == 0:
                     raise CompilationError("IF statement must be followed by code")
                 root_node.append_child(Node(curr, [expr_node, block_node]))
-
-                    
                 i = j+1
 
             # THEN = 'THEN'
@@ -481,6 +480,9 @@ class Parser(object):
             # BIN_EXPR = 5
             # STMT = 6
             # BLOCK = 7
+            # Detect expressions and pass peacefully
+            elif curr.type in NUMERALS or curr.type in MATH_FUNCTIONS or curr.type == TOKEN_TYPE.L_PAREN or curr.type == TOKEN_TYPE.R_PAREN:
+                i += 1
             else:
                 if DEBUG: print(f'failed to parse token {curr}.')
                 i += 1
