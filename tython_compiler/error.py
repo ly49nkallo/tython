@@ -1,3 +1,11 @@
+"Errors used during compilation"
 
-class CompilationError(Exception):
+
+class ParsingError(Exception):
+    ...
+
+class LoweringError(Exception):
+    ...
+
+class InterpreterEror(Exception):
     ...

@@ -4,3 +4,5 @@
 - [x] Boolean operator
 - [x] Logical operator
 - [x] Support for if-then-end expressions
+- [ ] Code optimizer
+- [ ] Lowerer

@@ -70,7 +70,7 @@ def test_case_3():
 
 
 if __name__ == '__main__':
-    tc.init(debug=True, tab_width=1)
+    tc.init(debug=False, tab_width=1)
     start_time = time.time()
     test_case_1() 
     test_case_2()
