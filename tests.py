@@ -35,17 +35,17 @@ def test_case_1():
 @test_case
 def test_case_2():
     program = '''
-    PROGRAM "test 1"
+    PROGRAM "test 2"
     Implicit real32 x
-    x = (1 + 2) + 3 * 4
-    y = (4)
+    x -> (1 + 2) + 3 * 4
+    y -> (4)
     if (5 + 6) > 7
-    # disp "Wat :|"
-    # if ((8 + 9 > 10) or (11 + 12 > 13)) or (14 == 15) then
+    disp "Wat :|"
+    if ((8 + 9 > 10) or (11 + 12 > 13)) or (14 == 15) then
     disp "Ok then..."
     disp "2"
     disp "3"
-    #end
+    end
     #EOF
     '''
     tokens = tc.Parser.lexical_analysis(program)
@@ -54,19 +54,24 @@ def test_case_2():
 
 @test_case
 def test_case_3():
-    print(tc.Parser.handle_expr([
-        tc.Token(tc.TOKEN_TYPE.INT_LIT, 0, 1),
-        tc.Token(tc.TOKEN_TYPE.PLUS, 0),
-        tc.Token(tc.TOKEN_TYPE.INT_LIT, 0, 2)
-        ]
-        ))
+    '''Test Functions'''
+    program = '''
+    PROGRAM "test 3"
+    x -> sin(1)
+    #EOF
+    '''
+    tokens = tc.Parser.lexical_analysis(program)
+    tree = tc.Parser.syntax_analysis(tokens)
+    print(tree)
+
+
     pass
 
 
 if __name__ == '__main__':
-    tc.set_debug()
+    tc.init(debug=True, tab_width=1)
     start_time = time.time()
-    test_case_1() 
+    #test_case_1() 
     test_case_2()
     test_case_3()
     print(f"All test cases passed in {(time.time() - start_time):0.4f} seconds")

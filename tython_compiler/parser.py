@@ -208,7 +208,7 @@ class Parser(object):
                         i -= 3
                     i += 1
         # make sure there arnt any orphaned numbers left
-        if len(new_nodes) != 1:
+        if len([n for n in new_nodes if n.token.type in NUMERALS]) != 1:
             for node in new_nodes:
                 if node.token.type in NUMERALS:
                     raise SyntaxError(f"Orphaned numeral token {node.token} from nodes while processing {tokens}")
@@ -353,7 +353,7 @@ class Parser(object):
                     j += 1
                 expr_node = cls.handle_logical_expr(scan)
                 # detect if in 'if then ... end clause'
-                if tokens[j] == TOKEN_TYPE.THEN:
+                if tokens[j].type == TOKEN_TYPE.THEN:
                     block_node = Node(Token(TOKEN_TYPE.BLOCK, -1))
                     scan = []
                     while tokens[j].type != TOKEN_TYPE.END:
@@ -367,7 +367,7 @@ class Parser(object):
                     block_node = Node(Token(TOKEN_TYPE.BLOCK, -1))
                     scan = []
                     if tokens[j].type != TOKEN_TYPE.LINE_BREAK: #BUG
-                        raise SyntaxError("IF statement must close with LINE_BREAK or THEN")
+                        raise SyntaxError(f"IF statement must close with LINE_BREAK or THEN, got {tokens[j]}")
                     j += 1
                     while tokens[j].type not in {TOKEN_TYPE.EOF, TOKEN_TYPE.LINE_BREAK}:
                         scan.append(tokens[j])

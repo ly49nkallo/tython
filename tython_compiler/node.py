@@ -1,3 +1,4 @@
+"Define Node Class"
 import os, sys
 import pathlib
 import functools
@@ -12,7 +13,7 @@ from pprint import pprint
 from .token_types import *
 from .token import Token
 
-TAB_WIDTH = 3
+TAB_WIDTH = 2
 MAX_RECURSION_DEPTH = 100
 
 class Node(object):

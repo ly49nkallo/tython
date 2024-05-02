@@ -17,7 +17,6 @@ from .token import Token
 
 LOGFILE:pathlib.Path = pathlib.Path("./log.log")
 
-
 class Interpreter(object):
     def __init__(self):
         self.variables = dict()

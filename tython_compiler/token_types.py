@@ -12,7 +12,7 @@ class TOKEN_TYPE(enum.Enum):
         REAL64 = 'REAL64'
         CHAR8 = 'CHAR8'
         # MATHEMATICAL OPERATORS
-        ASSIGN = '\='
+        ASSIGN = '\-\>'
         PLUS = '\+'
         MINUS = '\-'
         MUL = '\*'
@@ -66,6 +66,13 @@ class TOKEN_TYPE(enum.Enum):
         COT = 'COT'
         SEC = 'SEC'
         CSC = 'CSC'
+        # INVERSE TRIG FUNCTIONS
+        ARCSIN = 'ARCSIN'
+        ARCCOS = 'ARCCOS'
+        ARCTAN = 'ARCTAN'
+        ARCCOT = 'ARCCOT'
+        ARCSEC = 'ARCSEC'
+        ARCCSC = 'ARCCSC'
         # ARRAY FUNCTIONS
         DIM = 'DIM'
         # STRUCTURE TOKENS
