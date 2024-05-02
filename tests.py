@@ -7,7 +7,7 @@ class TestCaseError(Exception):
     ...
 
 def test_case(func):
-    '''Define some simple helpers for test_cases'''
+    '''Wrapper defining some simple helpers for test_cases'''
     def wrapper(*args, **kwargs):
         global IOTA
         print(f"Start test {IOTA}")
@@ -71,7 +71,7 @@ def test_case_3():
 if __name__ == '__main__':
     tc.init(debug=True, tab_width=1)
     start_time = time.time()
-    #test_case_1() 
+    test_case_1() 
     test_case_2()
     test_case_3()
     print(f"All test cases passed in {(time.time() - start_time):0.4f} seconds")
