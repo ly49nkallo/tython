@@ -340,19 +340,18 @@ class Parser(object):
                 i += 2
             # # MATHEMATICAL OPERATORS
             # ASSIGN = '\-\>'
-            elif curr.type == TOKEN_TYPE.VAR:
-                if prev.type == TOKEN_TYPE.ASSIGN:
-                    scan = []
-                    j = i
-                    while tokens[j].type != TOKEN_TYPE.LINE_BREAK and j > 0:
-                        scan.append(tokens[j])
-                        j -= 1
-                    scan = list(reversed(scan))
-                    expr_node = cls.handle_expr(scan)
-                    root_node.append_child(Node(prev, [Node(curr), expr_node]))
-                    i += 1
-                else:
+            elif curr.type == TOKEN_TYPE.ASSIGN:
+                if next.type != TOKEN_TYPE.VAR:
                     raise CompilationError("Expected expression after variable instance")
+                scan = []
+                j = i-1
+                while tokens[j].type != TOKEN_TYPE.LINE_BREAK and j > 0:
+                    scan.append(tokens[j])
+                    j -= 1
+                scan = list(reversed(scan))
+                expr_node = cls.handle_expr(scan)
+                root_node.append_child(Node(curr, [Node(next), expr_node]))
+                i += 2
             # PLUS = '\+':
             # MINUS = '\-'
             # MUL = '\*'
