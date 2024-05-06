@@ -10,6 +10,7 @@ def test_case(func):
     '''Wrapper defining some simple helpers for test_cases'''
     def wrapper(*args, **kwargs):
         global IOTA
+        print("="*20)
         print(f"Start test {IOTA}")
         start_time = time.time()
         func(*args, **kwargs)
@@ -29,7 +30,7 @@ def test_case_1():
     tokens = tc.Parser.lexical_analysis(program)
     tree = tc.Parser.syntax_analysis(tokens)
     print(tree)
-
+    tc.Interpreter.interpret(tree)
     pass
 
 @test_case
@@ -51,6 +52,7 @@ def test_case_2():
     tokens = tc.Parser.lexical_analysis(program)
     tree = tc.Parser.syntax_analysis(tokens)
     print(tree)
+    tc.Interpreter.interpret(tree)
 
 @test_case
 def test_case_3():
@@ -64,10 +66,20 @@ def test_case_3():
     tokens = tc.Parser.lexical_analysis(program)
     tree = tc.Parser.syntax_analysis(tokens)
     print(tree)
+    tc.Interpreter.interpret(tree)
 
-
-    pass
-
+@test_case
+def test_shunting_yard_algorithm():
+    input_tokens = []
+    for i in range(7):
+        if i % 2 == 0:
+            input_tokens.append(tc.Token(tc.TOKEN_TYPE.INT_LIT, 0, i))
+        elif i % 4 == 1:
+            input_tokens.append(tc.Token(tc.TOKEN_TYPE.PLUS, 0))
+        elif i % 4 == 3:
+            input_tokens.append(tc.Token(tc.TOKEN_TYPE.MUL, 0))
+    tc.utils.print_plain_string(input_tokens)
+    tc.utils.print_plain_string(tc.shunting_yard_algorithm.shunting_yard(input_tokens))
 
 if __name__ == '__main__':
     tc.init(debug=False, tab_width=1)
@@ -75,4 +87,5 @@ if __name__ == '__main__':
     test_case_1() 
     test_case_2()
     test_case_3()
+    test_shunting_yard_algorithm()
     print(f"All test cases passed in {(time.time() - start_time):0.4f} seconds")

@@ -43,8 +43,11 @@ def main() -> None:
     # Initialize lexer
     tokens = tc.Parser.lexical_analysis(file_contents)
     tree = tc.Parser.syntax_analysis(tokens)
-    print(tree)
-    pass
+
+    if COMPILE:
+        raise NotImplementedError("Compilation not yet implemented!")
+    elif not COMPILE:
+        tc.Interpreter.interpret(tree)
 
 if __name__ == '__main__':
     main()

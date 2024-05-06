@@ -34,7 +34,7 @@ class Node(object):
         if tabs > MAX_RECURSION_DEPTH:
             raise NameError("Infinite Loop / Self-referential Node")
         if self.name is not None: ret = self.name
-        else: ret = repr(self.token)[len("TOKEN_TYPE")+1:]
+        else: ret = repr(self.token)
         if len(self.children) != 0: ret += '\n'
         for c in self.children:
             assert isinstance(c, Node), str(type(c))

@@ -11,7 +11,7 @@ class Token(object):
         self.line_number:int = line_number
 
     def __repr__(self) -> str:
-        ret = str(self.type)
-        if self.value: ret += f":{self.value}"
+        ret = str(self.type)[len("TOKEN_TYPE")+1:]
+        if self.value is not None: ret += f":{self.value}"
         if DEBUG: ret += f":line {self.line_number}"
         return ret
