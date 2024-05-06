@@ -53,6 +53,7 @@ def test_case_2():
     tree = tc.Parser.syntax_analysis(tokens)
     print(tree)
     tc.Interpreter.interpret(tree)
+    tc.utils.print_plain_string(tokens)
 
 @test_case
 def test_case_3():
@@ -67,6 +68,7 @@ def test_case_3():
     tree = tc.Parser.syntax_analysis(tokens)
     print(tree)
     tc.Interpreter.interpret(tree)
+    tc.utils.print_plain_string(tokens)
 
 @test_case
 def test_shunting_yard_algorithm():
