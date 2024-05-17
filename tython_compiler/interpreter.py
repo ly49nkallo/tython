@@ -143,6 +143,20 @@ class Interpreter():
     
     @staticmethod
     def evaluate_expression(expression_root_node:Node) -> typing.Union[Integer32, Integer64, Float32, Float64]:
+        # base case
+        rtt = expression_root_node.token.type # root node token type
+        if rtt == TOKEN_TYPE.EXPR:
+            return Interpreter.evaluate_expression(expression_root_node)
+        elif rtt in NUMERALS:
+            if rtt == TOKEN_TYPE.INT32:
+                ...
+            elif rtt == TOKEN_TYPE.INT64:
+                ...
+            elif rtt == TOKEN_TYPE.REAL32:
+                ...
+            elif rtt == TOKEN_TYPE.REAL64:
+                ...
+                ...
         ...
 
     @classmethod
