@@ -15,7 +15,6 @@ from .token import Token
 from .node import Node
 from .error import InterpreterEror
 
-
 @enum.unique
 class Datatypes(enum.Enum):
     INT32 = enum.auto()
@@ -25,6 +24,14 @@ class Datatypes(enum.Enum):
     CHAR8 = enum.auto()
 
 def match_token_to_datatype(token) -> Datatypes:
+    '''
+    @Params
+        token:Token
+            A token to match
+    @Returns
+        Datatypes
+            The corresponding Datatyles enum of the token type
+    '''
     assert isinstance(token, Token)
     t = token.type
     if t == TOKEN_TYPE.INT32:
@@ -68,6 +75,7 @@ class DType(abc.ABC):
         ...
 
 class Integer(DType):
+    '''Base class handling operations on Integers'''
     def add(self, other:'Integer'):
         ...
     def subtract(self, other:'Integer'):
@@ -91,6 +99,7 @@ class Integer64(Integer):
     ...
 
 class Float(DType):
+    '''Base class handling operations on Floats'''
     def add(self, other:'Float'):
         ...
     def subtract(self, other:'Float'):
@@ -123,12 +132,14 @@ class Interpreter():
 
     @classmethod
     def clear_variables(cls):
+        '''Erase information relataing to all variables (including array variables)'''
         cls.type_map = dict()
         cls.variables = dict()
         cls.array_variables = dict()
 
     @classmethod
     def interpret(cls, tree:Node):
+        '''Entry point for the interpreting loop. Wraps 'interpret_block' and handles program meta-data'''
         root_node = tree
         print("Begin interpreter")
         assert root_node.token.type == TOKEN_TYPE.PROG
@@ -138,11 +149,22 @@ class Interpreter():
 
     @classmethod
     def assign_datatype(cls, var:str, dtype:Datatypes):
+        '''
+        @Params
+            var:str             The variable name to assign to the
+            dtype:Datatypes     The datatype the variable will be assigned to
+        '''
         assert isinstance(var, str) and isinstance(dtype, Datatypes), f"{var.type=}, {dtype.type=}"
         cls.type_map[var.upper()] = dtype
     
     @staticmethod
     def evaluate_expression(expression_root_node:Node) -> typing.Union[Integer32, Integer64, Float32, Float64]:
+        '''
+        @Param
+            expression_root_node:Node       The node that lies at the root of the expression to be evaluated
+        @Returns
+            value:int | float               The value that the expression evaluates to
+        '''
         # base case
         rtt = expression_root_node.token.type # root node token type
         if rtt == TOKEN_TYPE.EXPR:
