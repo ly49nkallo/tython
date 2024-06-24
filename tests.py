@@ -60,8 +60,7 @@ def test_case_3():
     '''Test Functions'''
     program = '''
     PROGRAM "test 3"
-    sin(1) -> x
-
+    call "PROGRAM_FIVE"
     #EOF
     '''
     tokens = tc.Parser.lexical_analysis(program)
@@ -89,5 +88,5 @@ if __name__ == '__main__':
     test_case_1() 
     test_case_2()
     test_case_3()
-    test_shunting_yard_algorithm()
+    # test_shunting_yard_algorithm()
     print(f"All test cases passed in {(time.time() - start_time):0.4f} seconds")

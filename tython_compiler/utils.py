@@ -41,7 +41,9 @@ def print_plain_string(tokens:list) -> str:
         elif tt == TOKEN_TYPE.VAR: ret += f"{token.value}"
         elif tt == TOKEN_TYPE.ARRAY_VAR: ret += f"{token.value}"
         # Commands
-        elif tt in {TOKEN_TYPE.IMPLICIT, TOKEN_TYPE.PROGRAM, TOKEN_TYPE.IF, TOKEN_TYPE.ELSE, TOKEN_TYPE.THEN, TOKEN_TYPE.END, TOKEN_TYPE.DISP}:
+        elif tt in {TOKEN_TYPE.IMPLICIT, TOKEN_TYPE.PROGRAM, 
+                    TOKEN_TYPE.IF, TOKEN_TYPE.ELSE, TOKEN_TYPE.THEN, 
+                    TOKEN_TYPE.END, TOKEN_TYPE.DISP, TOKEN_TYPE.CALL}:
             ret += tt.value
         # Datatype Declarators
         elif tt in DATA_TYPES:

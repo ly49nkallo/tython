@@ -438,7 +438,10 @@ class Parser(object):
                 i += 3
             # CALL = 'CALL'
             elif curr.type == TOKEN_TYPE.CALL:
-                raise NotImplementedError()
+                if next.type != TOKEN_TYPE.STR_LIT:
+                    raise ParsingError(f"Expected STR_LIT after CALL, got {next.type} instead")
+                root_node.append_child(Node(curr, [Node(next, [])]))
+                i += 2
             # # VARIABLE LITERALS
             # CHAR_LIT = '\'.\''
             # STR_LIT = '\\".*\\"'
