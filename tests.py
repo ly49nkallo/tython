@@ -25,7 +25,7 @@ def test_case_1():
     program = '''
     PROGRAM "test 1"
     if 1 == 1
-    Disp "Hi"
+    Disp "Hello, World!"
     '''
     tokens = tc.Parser.lexical_analysis(program)
     tree = tc.Parser.syntax_analysis(tokens)
@@ -42,7 +42,7 @@ def test_case_2():
     (4) -> y
     if (5 + 6) > 7
     disp "Wat :|"
-    if ((8 + 9 > 10) or (11 + 12 > 13)) or (14 == 15) then
+    if ((8 + 9 > 10) or (11 + 12 <= 13)) or (14 == 15) then
     disp "Ok then..."
     disp "2"
     disp "3"
@@ -59,7 +59,7 @@ def test_case_3():
     '''Test Functions'''
     program = '''
     PROGRAM "test 3"
-    call "PROGRAM_FIVE"
+    call "PROGRAM_THREE"
     #EOF
     '''
     tokens = tc.Parser.lexical_analysis(program)

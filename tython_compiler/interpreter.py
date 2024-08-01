@@ -74,16 +74,21 @@ class DType(abc.ABC):
     def _meta_dtype():
         ...
 
-class Integer(DType):
+class Integer(abc.ABC, DType):
     '''Base class handling operations on Integers'''
+    @abc.abstractmethod
     def add(self, other:'Integer'):
         ...
+    @abc.abstractmethod
     def subtract(self, other:'Integer'):
         ...
+    @abc.abstractmethod
     def negate(self):
         ...
+    @abc.abstractmethod
     def multiply(self, other:'Integer'):
         ...
+    @abc.abstractmethod
     def devide(self, other:'Integer'):
         ...
 
@@ -98,22 +103,28 @@ class Integer64(Integer):
     _data = bytearray(_size)
     ...
 
-class Float(DType):
+class Float(abc.ABC, DType):
     '''Base class handling operations on Floats'''
+    @abc.abstractmethod
     def add(self, other:'Float'):
-        ...
+        ... # Maybe use ctypes to impl IEEE std.
+    @abc.abstractmethod
     def subtract(self, other:'Float'):
         ...
+    @abc.abstractmethod
     def negate(self):
         ...
+    @abc.abstractmethod
     def multiply(self, other:'Float'):
         ...
+    @abc.abstractmethod
     def devide(self, other:'Float'):
         ...
 
 class Float32(Float):
     _size = 4
     _data = bytearray(_size)
+    
 
 class Float64(Float):
     _size = 8
