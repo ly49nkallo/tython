@@ -7,5 +7,5 @@ class ParsingError(Exception):
 class LoweringError(Exception):
     ...
 
-class InterpreterEror(Exception):
+class InterpreterError(Exception):
     ...
