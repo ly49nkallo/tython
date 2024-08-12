@@ -76,7 +76,7 @@ class DType(abc.ABC):
     def type(self):
         ...
     def __repr__(self):
-        return repr(self.data)
+        return repr(self.__class__.__name__) + ':' + repr(self.data)
 
 class Integer(DType):
     '''Base class handling operations on Integers'''
@@ -86,17 +86,17 @@ class Integer(DType):
         else:
             self._data = self._type(data)
         self.readonly = readonly
-        print(type(self.data))
 
     @property
-    def data(self) -> ctypes.c_int32:
+    def data(self):
         return self._data
     @data.setter
     def set_data(self, value):
+        if self.readonly:
+            raise InterpreterError('data is read-only')
         if not isinstance(value, self._type):
             raise InterpreterError(f"Data input to {self._meta_dtype} must be of type <ctypes.c_int32>, got %s" % type(value))
         self._data = value
-        print(type(self.data))
     @data.getter
     def get_data(self):
         return self._data
@@ -111,13 +111,16 @@ class Integer(DType):
         return self._type
 
     def add(self, other:'Integer'):
-        return self._add_function(self.data, other.data)
+        return self.__class__(self._add_function(self.data, other.data))
     def subtract(self, other:'Integer'):
-        return self._sub_function(self.data, other.data)
+        return self.__class__(self._sub_function(self.data, other.data))
     def multiply(self, other:'Integer'):
-        return self._multiply_function(self.data, other.data)
+        return self.__class__(self._multiply_function(self.data, other.data))
     def devide(self, other:'Integer'):
-        return self._devide_function(self.data, other.data)
+        return self.__class__(self._devide_function(self.data, other.data))
+    def negate(self):
+        return self.__class__(self._negate_function(self.data))
+
     def __add__(self, other:'Integer'):
         return self.add(other)
     def __sub__(self, other:'Integer'):
@@ -126,19 +129,24 @@ class Integer(DType):
         return self.multiply(other)
     def __div__(self, other:'Integer'):
         return self.devide(other)
+    def __neg__(self):
+        return self.negate()
 
     @classmethod
     def static_add(cls, i1:'Integer', i2:'Integer'):
-        return cls._add_function(i1.data, i2.data)
+        return cls(cls._add_function(i1.data, i2.data))
     @classmethod
     def static_subtract(cls, i1:'Integer', i2:'Integer'):
-        return cls._subtract_function(i1.data, i2.data)
+        return cls(cls._subtract_function(i1.data, i2.data))
     @classmethod
     def static_multiply(cls, i1:'Integer', i2:'Integer'):
-        return cls._multiply_function(i1.data, i2.data)
+        return cls(cls._multiply_function(i1.data, i2.data))
     @classmethod
     def static_divide(cls, i1:'Integer', i2:'Integer'):
-        return cls._divide_function(i1.data, i2.data)
+        return cls(cls._divide_function(i1.data, i2.data))
+    @classmethod
+    def static_negate(cls, i:'Integer'):
+        return cls(cls._negate_function(i))
 
 class Integer32(Integer):
     _size = 4
@@ -147,6 +155,8 @@ class Integer32(Integer):
     _cdll = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'c_dlls/integer_operators.so'))
     _add_function = _cdll.i32_add
     _add_function.argtypes = (ctypes.c_int32, ctypes.c_int32)
+    _negate_function = _cdll.i32_negate
+    _negate_function.argtypes = (ctypes.c_int32, ctypes.c_int32)
     _subtract_function = _cdll.i32_subtract
     _subtract_function.argtypes = (ctypes.c_int32, ctypes.c_int32)
     _multiply_function = _cdll.i32_multiply
@@ -165,6 +175,8 @@ class Integer64(Integer):
     _cdll = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'c_dlls/integer_operators.so'))
     _add_function = _cdll.i64_add
     _add_function.argtypes = (ctypes.c_int64, ctypes.c_int64)
+    _negate_function = _cdll.i64_negate
+    _negate_function.argtypes = (ctypes.c_int64, ctypes.c_int64)
     _subtract_function = _cdll.i64_subtract
     _subtract_function.argtypes = (ctypes.c_int64, ctypes.c_int64)
     _multiply_function = _cdll.i64_multiply
@@ -177,30 +189,112 @@ class Integer64(Integer):
 
 class Float(DType):
     '''Base class handling operations on Floats'''
-    @abc.abstractmethod
+    def __init__(self, data, /, readonly:bool=False):
+        if isinstance(data, self._type):
+            self._data = data
+        else:
+            self._data = self._type(data)
+        self.readonly = readonly
+
+    @property
+    def data(self):
+        return self._data
+    @data.setter
+    def set_data(self, value):
+        if self.readonly:
+            raise InterpreterError('data is read-only')
+        if not isinstance(value, self._type):
+            raise InterpreterError(f"Data input to {self._meta_dtype} must be of type <ctypes.c_int32>, got %s" % type(value))
+        self._data = value
+    @data.getter
+    def get_data(self):
+        return self._data
+    @property
+    def size(self):
+        return self._size
+    @property
+    def meta_dtype(self):
+        return self._meta_dtype
+    @property
+    def type(self):
+        return self._type
+
     def add(self, other:'Float'):
-        ... # Maybe use ctypes to impl IEEE std.
-    @abc.abstractmethod
+        return self.__class__(self._add_function(self.data, other.data))
     def subtract(self, other:'Float'):
-        ...
-    @abc.abstractmethod
-    def negate(self):
-        ...
-    @abc.abstractmethod
+        return self.__class__(self._sub_function(self.data, other.data))
     def multiply(self, other:'Float'):
-        ...
-    @abc.abstractmethod
+        return self.__class__(self._multiply_function(self.data, other.data))
     def devide(self, other:'Float'):
-        ...
+        return self.__class__(self._devide_function(self.data, other.data))
+    def negate(self):
+        return self.__class__(self._negate_function(self.data))
+
+    def __add__(self, other:'Float'):
+        return self.add(other)
+    def __sub__(self, other:'Float'):
+        return self.subtract(other)
+    def __mul__(self, other:'Float'):
+        return self.multiply(other)
+    def __div__(self, other:'Float'):
+        return self.devide(other)
+    def __neg__(self):
+        return self.negate()
+
+    @classmethod
+    def static_add(cls, f1:'Float', f2:'Float'):
+        return cls(cls._add_function(f1.data, f2.data))
+    @classmethod
+    def static_subtract(cls, f1:'Float', f2:'Float'):
+        return cls(cls._subtract_function(f1.data, f2.data))
+    @classmethod
+    def static_multiply(cls, f1:'Float', f2:'Float'):
+        return cls(cls._multiply_function(f1.data, f2.data))
+    @classmethod
+    def static_divide(cls, f1:'Float', f2:'Float'):
+        return cls(cls._divide_function(f1.data, f2.data))
+    @classmethod
+    def static_negate(cls, i:'Float'):
+        return cls(cls._negate_function(i))
 
 class Float32(Float):
     _size = 4
-    _data = bytearray(_size)
+    _meta_dtype = Datatypes.REAL32
+    _type = ctypes.c_float
+    _cdll = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'c_dlls/float_operators.so'))
+    _add_function = _cdll.f32_add
+    _add_function.argtypes = (ctypes.c_float, ctypes.c_float)
+    _negate_function = _cdll.f32_negate
+    _negate_function.argtypes = (ctypes.c_float, ctypes.c_float)
+    _subtract_function = _cdll.f32_subtract
+    _subtract_function.argtypes = (ctypes.c_float, ctypes.c_float)
+    _multiply_function = _cdll.f32_multiply
+    _multiply_function.argtypes = (ctypes.c_float, ctypes.c_float)
+    _divide_function = _cdll.f32_divide
+    _divide_function.argtypes = (ctypes.c_float, ctypes.c_float)
+
+    def __init__(self, data, /, readonly=False):
+        super().__init__(data, readonly)
     
 
 class Float64(Float):
     _size = 8
-    _data = bytearray(_size)
+    _meta_dtype = Datatypes.REAL64
+    _type = ctypes.c_double
+    _cdll = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'c_dlls/float_operators.so'))
+    _add_function = _cdll.f64_add
+    _add_function.argtypes = (ctypes.c_double, ctypes.c_double)
+    _negate_function = _cdll.f64_negate
+    _negate_function.argtypes = (ctypes.c_double, ctypes.c_double)
+    _subtract_function = _cdll.f64_subtract
+    _subtract_function.argtypes = (ctypes.c_double, ctypes.c_double)
+    _multiply_function = _cdll.f64_multiply
+    _multiply_function.argtypes = (ctypes.c_double, ctypes.c_double)
+    _divide_function = _cdll.f64_divide
+    _divide_function.argtypes = (ctypes.c_float, ctypes.c_float)
+
+    def __init__(self, data, /, readonly=False):
+        super().__init__(data, readonly)
 
 
 class Char8(DType):
