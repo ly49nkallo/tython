@@ -61,81 +61,119 @@ class DType(abc.ABC):
     '''Abstract Data Type Base-Class'''
     @property
     @abc.abstractmethod
-    def _size() -> int:
+    def size(self) -> int:
         ...
     @property
     @abc.abstractmethod
-    def _data():
+    def data(self):
         ...
     @property
     @abc.abstractmethod
-    def _meta_dtype():
+    def meta_dtype(self):
         ...
+    @property
+    @abc.abstractmethod
+    def type(self):
+        ...
+    def __repr__(self):
+        return repr(self.data)
 
 class Integer(DType):
     '''Base class handling operations on Integers'''
+    def __init__(self, data, /, readonly:bool=False):
+        if isinstance(data, self._type):
+            self._data = data
+        else:
+            self._data = self._type(data)
+        self.readonly = readonly
+        print(type(self.data))
+
     @property
-    @abc.abstractmethod
-    def _add_function():
-        ...
+    def data(self) -> ctypes.c_int32:
+        return self._data
+    @data.setter
+    def set_data(self, value):
+        if not isinstance(value, self._type):
+            raise InterpreterError(f"Data input to {self._meta_dtype} must be of type <ctypes.c_int32>, got %s" % type(value))
+        self._data = value
+        print(type(self.data))
+    @data.getter
+    def get_data(self):
+        return self._data
     @property
-    @abc.abstractmethod
-    def _subtract_function():
-        ...
+    def size(self):
+        return self._size
     @property
-    @abc.abstractmethod
-    def _negate_function():
-        ...
+    def meta_dtype(self):
+        return self._meta_dtype
     @property
-    @abc.abstractmethod
-    def _multiply_function():
-        ...
-    @property
-    @abc.abstractmethod
-    def _devide_function():
-        ...
-    @abc.abstractmethod
+    def type(self):
+        return self._type
+
     def add(self, other:'Integer'):
-        ...
-    @abc.abstractmethod
+        return self._add_function(self.data, other.data)
     def subtract(self, other:'Integer'):
-        ...
-    @abc.abstractmethod
-    def negate(self):
-        ...
-    @abc.abstractmethod
+        return self._sub_function(self.data, other.data)
     def multiply(self, other:'Integer'):
-        ...
-    @abc.abstractmethod
+        return self._multiply_function(self.data, other.data)
     def devide(self, other:'Integer'):
-        ...
+        return self._devide_function(self.data, other.data)
+    def __add__(self, other:'Integer'):
+        return self.add(other)
+    def __sub__(self, other:'Integer'):
+        return self.subtract(other)
+    def __mul__(self, other:'Integer'):
+        return self.multiply(other)
+    def __div__(self, other:'Integer'):
+        return self.devide(other)
+
+    @classmethod
+    def static_add(cls, i1:'Integer', i2:'Integer'):
+        return cls._add_function(i1.data, i2.data)
+    @classmethod
+    def static_subtract(cls, i1:'Integer', i2:'Integer'):
+        return cls._subtract_function(i1.data, i2.data)
+    @classmethod
+    def static_multiply(cls, i1:'Integer', i2:'Integer'):
+        return cls._multiply_function(i1.data, i2.data)
+    @classmethod
+    def static_divide(cls, i1:'Integer', i2:'Integer'):
+        return cls._divide_function(i1.data, i2.data)
 
 class Integer32(Integer):
     _size = 4
     _meta_dtype = Datatypes.INT32
+    _type = ctypes.c_int32
     _cdll = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'c_dlls/integer_operators.so'))
     _add_function = _cdll.i32_add
     _add_function.argtypes = (ctypes.c_int32, ctypes.c_int32)
+    _subtract_function = _cdll.i32_subtract
+    _subtract_function.argtypes = (ctypes.c_int32, ctypes.c_int32)
+    _multiply_function = _cdll.i32_multiply
+    _multiply_function.argtypes = (ctypes.c_int32, ctypes.c_int32)
+    _divide_function = _cdll.i32_divide
+    _divide_function.argtypes = (ctypes.c_int32, ctypes.c_int32)
 
-    def __init__(self, data:int, /, readonly:bool=False):
-        self.data = ctypes.c_int32(data)
-    @property
-    def data(self) -> ctypes.c_int32:
-        return self._data
-    @property.setter
-    def data(self, value):
-        if not isinstance(value, ctypes.c_int32):
-            raise InterpreterError
-        self._data = value
-    @staticmethod
-    def static_add(i1:'Integer32', i2:'Integer32'):
-        return Integer32._add_function(ctypes.c_int32(i1), ctypes.c_int32(i2))
+    def __init__(self, data, /, readonly=False):
+        super().__init__(data, readonly)
 
 
 class Integer64(Integer):
     _size = 8
-    _data = bytearray(_size)
-    ...
+    _meta_dtype = Datatypes.INT64
+    _type = ctypes.c_int64
+    _cdll = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'c_dlls/integer_operators.so'))
+    _add_function = _cdll.i64_add
+    _add_function.argtypes = (ctypes.c_int64, ctypes.c_int64)
+    _subtract_function = _cdll.i64_subtract
+    _subtract_function.argtypes = (ctypes.c_int64, ctypes.c_int64)
+    _multiply_function = _cdll.i64_multiply
+    _multiply_function.argtypes = (ctypes.c_int64, ctypes.c_int64)
+    _divide_function = _cdll.i64_divide
+    _divide_function.argtypes = (ctypes.c_int64, ctypes.c_int64)
+
+    def __init__(self, data, /, readonly=False):
+        super().__init__(data, readonly)
 
 class Float(DType):
     '''Base class handling operations on Floats'''
