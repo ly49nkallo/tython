@@ -113,3 +113,10 @@ if i < 20 then
 goto A
 
 ```
+
+## Installation
+
+This package requires some compiled binaries in order to emulate the virtual machine.
+Steps:
+1. Navigate to `tython_compiler/c_dlls` 
+2. run `./compile.sh` or `bash compile.sh` if on bash. Otherwise, execute the scripts natively on your shell.
