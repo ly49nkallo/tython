@@ -189,27 +189,26 @@ class Parser(object):
         new_nodes = cls.handle_parenthesis(tokens, mode="EXPR")
         # Smushes together operation nodes in order of operations
         for op_level in reversed(ORDER_OF_OPERATIONS):
-            for op in op_level:
-                i = 0
-                while i < len(new_nodes):
-                    node:Node = new_nodes[i]
-                    if node.token.type == op and node.is_leaf():
-                        try: #nodes doesnt contain the correct information
-                            lhs:Node = new_nodes[i-1]
-                            rhs:Node = new_nodes[i+1]
-                            assert i-1 >= 0
-                        except:
-                            raise ParsingError("Structure of expression invalid")
-                        if not (lhs.token.type in NUMERALS or lhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
-                            raise ParsingError(f"Structure of expression invalid, got {lhs.token.type} instead")
-                        if not (rhs.token.type in NUMERALS or rhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
-                            raise ParsingError(f"Structure of expression invalid, got {rhs.token.type} instead")
-                        new_node = node
-                        new_node.children = [lhs, rhs]
-                        new_nodes = new_nodes[0:i-1] + new_nodes[i+2:]
-                        new_nodes.insert(i-1, new_node)
-                        i -= 3
-                    i += 1
+            i = 0
+            while i < len(new_nodes):
+                node:Node = new_nodes[i]
+                if node.token.type in op_level and node.is_leaf():
+                    try: #nodes doesnt contain the correct information
+                        lhs:Node = new_nodes[i-1]
+                        rhs:Node = new_nodes[i+1]
+                        assert i-1 >= 0
+                    except:
+                        raise ParsingError("Structure of expression invalid")
+                    if not (lhs.token.type in NUMERALS or lhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
+                        raise ParsingError(f"Structure of expression invalid, got {lhs.token.type} instead")
+                    if not (rhs.token.type in NUMERALS or rhs.token.type == TOKEN_TYPE.EXPR) and len(lhs.children) == 0:
+                        raise ParsingError(f"Structure of expression invalid, got {rhs.token.type} instead")
+                    new_node = node
+                    new_node.children = [lhs, rhs]
+                    new_nodes = new_nodes[0:i-1] + new_nodes[i+2:]
+                    new_nodes.insert(i-1, new_node)
+                    i -= 3
+                i += 1
         # Attempt to assign expressions to functions
         i = 0
         while i < len(new_nodes):
