@@ -114,7 +114,7 @@ class Integer(DType):
     def multiply(self, other:'Integer'):
         return self.__class__(self._multiply_function(self.data, other.data))
     def devide(self, other:'Integer'):
-        return self.__class__(self._devide_function(self.data, other.data))
+        return self.__class__(self._divide_function(self.data, other.data))
     def negate(self):
         return self.__class__(self._negate_function(self.data))
 
@@ -124,7 +124,7 @@ class Integer(DType):
         return self.subtract(other)
     def __mul__(self, other:'Integer'):
         return self.multiply(other)
-    def __div__(self, other:'Integer'):
+    def __truediv__(self, other:'Integer'):
         return self.devide(other)
     def __neg__(self):
         return self.negate()

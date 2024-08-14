@@ -83,7 +83,7 @@ class Parser(object):
                 current_line_number += 1
             elif i == len(text) - 1:
                 if buffer != '':
-                    tokens.append(cls.analyze_buffer(buffer))
+                    tokens.append(cls.analyze_buffer(buffer, current_line_number))
             i += 1
         if DEBUG: pprint(buffers)
         for buffer in buffers:
