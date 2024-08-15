@@ -150,3 +150,9 @@ MATH_FUNCTIONS:set = {
     TOKEN_TYPE.ARCSEC,
     TOKEN_TYPE.ARCCSC,
 }
+def is_expr_type(type): 
+    return type in NUMERALS \
+        or type in MATH_FUNCTIONS \
+        or type == TOKEN_TYPE.L_PAREN \
+        or type == TOKEN_TYPE.R_PAREN \
+        or type in NUMERICAL_OPERATORS 

@@ -6,3 +6,5 @@
 - [x] Support for if-then-end expressions
 - [ ] Code optimizer
 - [ ] Lowerer
+
+- [ ] Finish 'analyze block' in interpreter class

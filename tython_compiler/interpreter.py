@@ -32,7 +32,7 @@ class Interpreter():
     def interpret(self, tree:Node):
         '''Entry point for the interpreting loop. Wraps 'interpret_block' and handles program meta-data'''
         root_node = tree
-        print("Begin interpreter")
+        print("=" * 8, "Begin interpreter","=" * 8)
         assert root_node.token.type == TOKEN_TYPE.PROG
         program_name:str = tree.children[0].children[0].token.value
         print(f'{program_name=}')
@@ -79,6 +79,7 @@ class Interpreter():
             raise InterpreterError(f"Could not evaluate expression node {expression_root_node}")
 
     def interpret_block(self, root_node:Node):
+        """Interpret code block. If/Else statements create new blocks"""
         for node in root_node.children:
             assert isinstance(node, Node)
             token = node.token
@@ -89,5 +90,12 @@ class Interpreter():
                 self.assign_datatype(var, dtype)
                 print(self.type_map)
             elif token.type == TOKEN_TYPE.ASSIGN:
-                self.variables = children[0].token.value
+                self.variables[children[0].token.value] = self.evaluate_expression(children[1])
+                print(self.variables)
+            elif token.type == TOKEN_TYPE.DISP:
+                c = children[0]
+                if c.token.type == TOKEN_TYPE.VAR:
+                    print(self.variables[c.token.value].true_repr())
+                else:
+                    print(children[0].token.value.true_repr())
 

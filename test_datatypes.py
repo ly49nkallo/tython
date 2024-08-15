@@ -11,10 +11,10 @@ i4 = Integer64(1)
 print(i3 + i4)
 program = '''
             program "a"
-            (1 + 3234) / 3 * 2 -> i
+            (1 + 1) / 2 * 7 / 2 -> i
             Disp i
         '''
 tokens = tc.Parser.lexical_analysis(program)
 print(tokens)
 print(tree := tc.Parser.syntax_analysis(tokens))
-print(interpreter.evaluate_expression(tree.children[1].children[1]))
+interpreter.interpret(tree)

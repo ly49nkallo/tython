@@ -183,8 +183,7 @@ class Parser(object):
         # quick return for lone number
         if len(tokens) == 1:
             if tokens[0].type in NUMERALS:
-                return Node(tokens[0])
-
+                return Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number), children=[Node(tokens[0])])
         root_node = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number))
         new_nodes = cls.handle_parenthesis(tokens, mode="EXPR")
         # Smushes together operation nodes in order of operations
@@ -342,14 +341,10 @@ class Parser(object):
             # ASSIGN = '\-\>'
             elif curr.type == TOKEN_TYPE.ASSIGN:
                 if next.type != TOKEN_TYPE.VAR:
-                    raise ParsingError("Expected expression after variable instance")
-                scan = []
-                j = i-1
-                while tokens[j].type != TOKEN_TYPE.LINE_BREAK and j > 0:
-                    scan.append(tokens[j])
-                    j -= 1
-                scan = list(reversed(scan))
-                expr_node = cls.handle_expr(scan)
+                    raise ParsingError("Expected variable after variable instance")
+                if root_node.children[-1].token.type != TOKEN_TYPE.EXPR:
+                    raise ParsingError("Expected expression before assignment operator")
+                expr_node = root_node.children.pop()
                 root_node.append_child(Node(curr, [Node(next), expr_node]))
                 i += 2
             # PLUS = '\+':
@@ -482,9 +477,24 @@ class Parser(object):
             # BIN_EXPR = 5
             # STMT = 6
             # BLOCK = 7
-            # Detect expressions and pass peacefully
-            elif curr.type in NUMERALS or curr.type in MATH_FUNCTIONS or curr.type == TOKEN_TYPE.L_PAREN or curr.type == TOKEN_TYPE.R_PAREN:
-                i += 1
+            # Detect expressions
+            elif is_expr_type(curr.type):
+                # scan = [] # j = i-1
+                # while tokens[j].type != TOKEN_TYPE.LINE_BREAK and j > 0:
+                #     scan.append(tokens[j])
+                #     j -= 1
+                # scan = list(reversed(scan))
+                # expr_node = cls.handle_expr(scan)
+                # root_node.append_child(Node(curr, [Node(next), expr_node]))
+                scan = []
+                j = i
+                while (is_expr_type(tokens[j].type)):
+                    scan.append(tokens[j])
+                    j += 1
+                print(scan)
+                expr_node = cls.handle_expr(scan)
+                root_node.append_child(expr_node)
+                i = j
             else:
                 if DEBUG: print(f'failed to parse token {curr}.')
                 i += 1

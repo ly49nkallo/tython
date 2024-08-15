@@ -145,6 +145,7 @@ class Integer(DType):
     def static_negate(cls, i:'Integer'):
         return cls(cls._negate_function(i))
 
+
 class Integer32(Integer):
     _size = 4
     _meta_dtype = Datatypes.INT32
@@ -163,6 +164,9 @@ class Integer32(Integer):
 
     def __init__(self, data, /, readonly=False):
         super().__init__(data, readonly)
+
+    def true_repr(self):
+        return repr(repr(self.data)[len("c_long")+1:-1])
 
 
 class Integer64(Integer):
@@ -183,6 +187,9 @@ class Integer64(Integer):
 
     def __init__(self, data, /, readonly=False):
         super().__init__(data, readonly)
+
+    def true_repr(self):
+        return repr(repr(self.data)[len("c_long_long")+1:-1])
 
 class Float(DType):
     '''Base class handling operations on Floats'''
@@ -272,6 +279,8 @@ class Float32(Float):
 
     def __init__(self, data, /, readonly=False):
         super().__init__(data, readonly)
+    def true_repr(self):
+        return repr(repr(self.data)[len("c_float")+1:-1])
     
 
 class Float64(Float):
