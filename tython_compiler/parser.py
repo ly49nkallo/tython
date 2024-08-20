@@ -184,6 +184,11 @@ class Parser(object):
         if len(tokens) == 1:
             if tokens[0].type in NUMERALS:
                 return Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number), children=[Node(tokens[0])])
+        # quick return for lone variable
+        if len(tokens) == 1:
+            if tokens[0].type == TOKEN_TYPE.VAR:
+                return Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number), children=[Node(tokens[0])])
+        
         root_node = Node(Token(TOKEN_TYPE.EXPR, tokens[0].line_number))
         new_nodes = cls.handle_parenthesis(tokens, mode="EXPR")
         # Smushes together operation nodes in order of operations

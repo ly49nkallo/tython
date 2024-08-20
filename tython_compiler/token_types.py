@@ -155,4 +155,5 @@ def is_expr_type(type):
         or type in MATH_FUNCTIONS \
         or type == TOKEN_TYPE.L_PAREN \
         or type == TOKEN_TYPE.R_PAREN \
-        or type in NUMERICAL_OPERATORS 
+        or type in NUMERICAL_OPERATORS \
+        or type == TOKEN_TYPE.VAR

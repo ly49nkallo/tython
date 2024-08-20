@@ -22,6 +22,8 @@ class Interpreter():
     type_map = dict() # type_map["A0"] = Datatypes.[...]
     variables = dict() # variables["A0"] = [...]
     array_variables = dict() # array_variables["A0"] = [...]
+    jump_table = dict() #jump_table["L"] = int
+    instruction_pointer:int = 0
 
     def clear_variables(self):
         '''Erase information relataing to all variables (including array variables)'''
@@ -75,8 +77,18 @@ class Interpreter():
                 return self.evaluate_expression(expression_root_node.children[0]) * self.evaluate_expression(expression_root_node.children[1])
             elif rtt == TOKEN_TYPE.DIV:
                 return self.evaluate_expression(expression_root_node.children[0]) / self.evaluate_expression(expression_root_node.children[1])
+        elif rtt in MATH_FUNCTIONS:
+            raise NotImplementedError()
         else:
             raise InterpreterError(f"Could not evaluate expression node {expression_root_node}")
+        
+    def evaluate_boolean_expression(self, expression_root_node:Node) -> bool:
+        # TODO
+        return False
+    
+    def evaluate_logical_expression(self, expression_root_node:Node) -> bool:
+        # TODO
+        return False
 
     def interpret_block(self, root_node:Node):
         """Interpret code block. If/Else statements create new blocks"""
@@ -97,5 +109,5 @@ class Interpreter():
                 if c.token.type == TOKEN_TYPE.VAR:
                     print(self.variables[c.token.value].true_repr())
                 else:
-                    print(children[0].token.value.true_repr())
+                    print(children[0].token.value.true_repr())        
 

@@ -22,19 +22,23 @@ def test_case(func):
 '''TESTS'''
 @test_case
 def test_case_1():
+    parser = tc.Parser()
     program = '''
     PROGRAM "test 1"
     if 1 == 1
     Disp "Hello, World!"
     '''
-    tokens = tc.Parser.lexical_analysis(program)
-    tree = tc.Parser.syntax_analysis(tokens)
+    interpreter = tc.Interpreter()
+    tokens = parser.lexical_analysis(program)
+    tree = parser.syntax_analysis(tokens)
     print(tree)
-    tc.Interpreter.interpret(tree)
+    interpreter.interpret(tree)
     pass
 
 @test_case
 def test_case_2():
+    parser = tc.Parser()
+    interpreter = tc.Interpreter()
     program = '''
     PROGRAM "test 2"
     Implicit real32 x
@@ -49,22 +53,24 @@ def test_case_2():
     end
     #EOF
     '''
-    tokens = tc.Parser.lexical_analysis(program)
-    tree = tc.Parser.syntax_analysis(tokens)
+    tokens = parser.lexical_analysis(program)
+    tree = parser.syntax_analysis(tokens)
     print(tree)
-    tc.Interpreter.interpret(tree)
 
 @test_case
 def test_case_3():
+    parser = tc.Parser()
     '''Test Functions'''
     program = '''
     PROGRAM "test 3"
     call "PROGRAM_THREE"
+    implicit real32 x
+    sin(x) -> y
     #EOF
     '''
-    tokens = tc.Parser.lexical_analysis(program)
-    tree = tc.Parser.syntax_analysis(tokens)
-    tc.Interpreter.interpret(tree)
+    tokens = parser.lexical_analysis(program)
+    tree = parser.syntax_analysis(tokens)
+    print(tree)
 
 @test_case
 def test_shunting_yard_algorithm():
